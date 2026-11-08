@@ -9,6 +9,7 @@ const CONFIG = {
   cooldownMs: 2 * 60 * 1000,      // ignore repeat punches from same person within 2 min
   shiftStart: process.env.SHIFT_START || '09:30',
   targetHours: Number(process.env.TARGET_HOURS || 8),
+  timeZone: process.env.TIMEZONE || 'Asia/Karachi',
 };
 
 // ---------- MongoDB Connection ----------
@@ -58,8 +59,23 @@ function distance(a, b) {
   return Math.sqrt(s);
 }
 const isValidDescriptor = d => Array.isArray(d) && d.length === 128 && d.every(Number.isFinite);
-const todayStr = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD (server local time)
-const timeStr = ms => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const todayStr = (ms = Date.now()) => {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: CONFIG.timeZone }).format(new Date(ms));
+  } catch (e) {
+    return new Date(ms).toLocaleDateString('en-CA');
+  }
+};
+const timeStr = ms => {
+  try {
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: CONFIG.timeZone,
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }).format(new Date(ms));
+  } catch (e) {
+    return new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+};
 const escapeRegex = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // ---------- Config endpoint (used by dashboard) ----------
@@ -152,7 +168,7 @@ app.post('/api/mark', async (req, res) => {
       return res.status(404).json({ error: 'Face not recognized' });
 
     const now = Date.now();
-    const day = todayStr();
+    const day = (req.body && req.body.date) || todayStr(now);
 
     const todays = await db.collection('attendance')
       .find({ employeeId: best.id, date: day })
