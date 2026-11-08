@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 const { MongoClient } = require('mongodb');
 
 // ---------- Configuration ----------
@@ -10,6 +11,9 @@ const CONFIG = {
   shiftStart: process.env.SHIFT_START || '09:30',
   targetHours: Number(process.env.TARGET_HOURS || 8),
   timeZone: process.env.TIMEZONE || 'Asia/Karachi',
+  jwtSecret: process.env.JWT_SECRET || 'attendance_ultra_secure_jwt_secret_key_2026',
+  defaultAdminUser: process.env.ADMIN_USER || 'admin',
+  defaultAdminPass: process.env.ADMIN_PASS || 'admin123',
 };
 
 // ---------- MongoDB Connection ----------
@@ -18,6 +22,41 @@ const DB_NAME = process.env.DB_NAME || 'attendance_db';
 
 let cachedClient = null;
 let indexesCreated = false;
+
+// Password Encryption (PBKDF2 with Salt)
+function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return { salt, hash };
+}
+
+function verifyPassword(password, salt, hash) {
+  const verifyHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return hash === verifyHash;
+}
+
+// Token Generation & Verification (HMAC-SHA256)
+function generateToken(payload) {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const body = Buffer.from(JSON.stringify({ ...payload, exp: Date.now() + 7 * 24 * 60 * 60 * 1000 })).toString('base64url');
+  const sig = crypto.createHmac('sha256', CONFIG.jwtSecret).update(`${header}.${body}`).digest('base64url');
+  return `${header}.${body}.${sig}`;
+}
+
+function verifyToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [header, body, sig] = parts;
+  const expectedSig = crypto.createHmac('sha256', CONFIG.jwtSecret).update(`${header}.${body}`).digest('base64url');
+  if (sig !== expectedSig) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    if (payload.exp && Date.now() > payload.exp) return null;
+    return payload;
+  } catch (e) {
+    return null;
+  }
+}
 
 async function getDb() {
   try {
@@ -35,6 +74,20 @@ async function getDb() {
       try {
         await db.collection('employees').createIndex({ code: 1 });
         await db.collection('attendance').createIndex({ date: 1, employeeId: 1 });
+        await db.collection('admins').createIndex({ username: 1 });
+
+        // Ensure default admin exists
+        const adminCount = await db.collection('admins').countDocuments();
+        if (adminCount === 0) {
+          const { salt, hash } = hashPassword(CONFIG.defaultAdminPass);
+          await db.collection('admins').insertOne({
+            username: CONFIG.defaultAdminUser,
+            salt,
+            hash,
+            createdAt: Date.now(),
+          });
+          console.log(`Default admin user '${CONFIG.defaultAdminUser}' initialized.`);
+        }
         indexesCreated = true;
       } catch (e) {
         // index warning ignored
@@ -51,6 +104,21 @@ async function getDb() {
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ---------- Auth Middleware ----------
+function requireAdmin(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const token = (authHeader && authHeader.startsWith('Bearer '))
+    ? authHeader.slice(7)
+    : req.headers['x-admin-token'];
+
+  const payload = verifyToken(token);
+  if (!payload || payload.role !== 'admin') {
+    return res.status(401).json({ error: 'Unauthorized: Admin login required' });
+  }
+  req.admin = payload;
+  next();
+}
 
 // ---------- Helpers ----------
 function distance(a, b) {
@@ -78,13 +146,67 @@ const timeStr = ms => {
 };
 const escapeRegex = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// ---------- Config endpoint (used by dashboard) ----------
+// ---------- Auth Routes ----------
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body || {};
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+    const db = await getDb();
+    const admin = await db.collection('admins').findOne({
+      username: String(username).trim().toLowerCase()
+    });
+    if (!admin || !verifyPassword(password, admin.salt, admin.hash)) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+    const token = generateToken({ username: admin.username, role: 'admin' });
+    res.json({ ok: true, token, username: admin.username });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Database error: ' + (err.message || 'Login failed') });
+  }
+});
+
+app.get('/api/auth/verify', (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = (authHeader && authHeader.startsWith('Bearer ')) ? authHeader.slice(7) : req.headers['x-admin-token'];
+  const payload = verifyToken(token);
+  if (!payload || payload.role !== 'admin') {
+    return res.status(401).json({ ok: false, error: 'Invalid or expired session' });
+  }
+  res.json({ ok: true, username: payload.username });
+});
+
+app.post('/api/auth/change-password', requireAdmin, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword || newPassword.length < 4) {
+      return res.status(400).json({ error: 'New password must be at least 4 characters long' });
+    }
+    const db = await getDb();
+    const admin = await db.collection('admins').findOne({ username: req.admin.username });
+    if (!admin || !verifyPassword(currentPassword, admin.salt, admin.hash)) {
+      return res.status(401).json({ error: 'Incorrect current password' });
+    }
+    const { salt, hash } = hashPassword(newPassword);
+    await db.collection('admins').updateOne(
+      { username: req.admin.username },
+      { $set: { salt, hash, updatedAt: Date.now() } }
+    );
+    res.json({ ok: true, message: 'Password updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+// ---------- Config endpoint (used by dashboard & kiosk) ----------
 app.get('/api/config', (req, res) => {
   res.json({ shiftStart: CONFIG.shiftStart, targetHours: CONFIG.targetHours });
 });
 
-// ---------- Employees ----------
-app.get('/api/employees', async (req, res) => {
+// ---------- Employees (Protected by requireAdmin) ----------
+app.get('/api/employees', requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     const employees = await db.collection('employees').find({}).toArray();
@@ -101,7 +223,7 @@ app.get('/api/employees', async (req, res) => {
   }
 });
 
-app.post('/api/employees', async (req, res) => {
+app.post('/api/employees', requireAdmin, async (req, res) => {
   try {
     const { name, code, descriptors } = req.body || {};
     if (!name || !code || !Array.isArray(descriptors) || descriptors.length === 0)
@@ -111,11 +233,39 @@ app.post('/api/employees', async (req, res) => {
 
     const db = await getDb();
     const cleanCode = String(code).trim();
+
+    // 1. Check if employee code already exists
     const existing = await db.collection('employees').findOne({
       code: { $regex: new RegExp(`^${escapeRegex(cleanCode)}$`, 'i') }
     });
     if (existing)
-      return res.status(409).json({ error: 'Employee code already exists' });
+      return res.status(409).json({ error: `Employee code '${cleanCode}' is already assigned to ${existing.name}` });
+
+    // 2. Check if this FACE is already registered under ANY employee!
+    const allEmployees = await db.collection('employees').find({}).toArray();
+    let matchedEmp = null;
+    let closestDist = Infinity;
+
+    for (const emp of allEmployees) {
+      for (const existingD of (emp.descriptors || [])) {
+        for (const newD of descriptors) {
+          const d = distance(newD, existingD);
+          if (d < closestDist) closestDist = d;
+          if (d < CONFIG.matchThreshold) {
+            matchedEmp = emp;
+            break;
+          }
+        }
+        if (matchedEmp) break;
+      }
+      if (matchedEmp) break;
+    }
+
+    if (matchedEmp) {
+      return res.status(409).json({
+        error: `Face already registered! You are already added as "${matchedEmp.name}" (Code: ${matchedEmp.code}).`
+      });
+    }
 
     const emp = {
       id: Date.now().toString(),
@@ -132,7 +282,7 @@ app.post('/api/employees', async (req, res) => {
   }
 });
 
-app.delete('/api/employees/:id', async (req, res) => {
+app.delete('/api/employees/:id', requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     const id = req.params.id;
@@ -147,7 +297,7 @@ app.delete('/api/employees/:id', async (req, res) => {
   }
 });
 
-// ---------- Attendance ----------
+// ---------- Attendance (Public Kiosk Route) ----------
 app.post('/api/mark', async (req, res) => {
   try {
     const { descriptor } = req.body || {};
@@ -224,9 +374,10 @@ app.get('/api/attendance', async (req, res) => {
 if (!process.env.VERCEL) {
   app.listen(CONFIG.port, () => {
     console.log(`Attendance server running at http://localhost:${CONFIG.port}`);
-    console.log(`  Kiosk:     http://localhost:${CONFIG.port}/`);
-    console.log(`  Admin:     http://localhost:${CONFIG.port}/admin.html`);
-    console.log(`  Dashboard: http://localhost:${CONFIG.port}/dashboard.html`);
+    console.log(`  Kiosk (Public): http://localhost:${CONFIG.port}/`);
+    console.log(`  Admin Login:    http://localhost:${CONFIG.port}/login.html`);
+    console.log(`  Employees:      http://localhost:${CONFIG.port}/admin.html`);
+    console.log(`  Dashboard:      http://localhost:${CONFIG.port}/dashboard.html`);
   });
 }
 

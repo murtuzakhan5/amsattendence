@@ -43,7 +43,13 @@
 <body>
 <header>
   <div class="brand">Attendance · Employee Management</div>
-  <nav><a href="/dashboard.html">Dashboard</a><a class="active" href="/admin.html">Employees</a><a href="/">Kiosk</a></nav>
+  <nav style="display:flex;align-items:center;flex-wrap:wrap">
+    <a href="/dashboard.html">Dashboard</a>
+    <a class="active" href="/admin.html">Employees</a>
+    <a href="/">Kiosk</a>
+    <span style="color:var(--muted);font-size:12px;margin-left:16px">Admin: <strong id="adminUserLabel" style="color:var(--text)"></strong></span>
+    <button onclick="logout()" style="margin-left:12px;padding:5px 10px;font-size:12px;background:#ef4444;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">Logout</button>
+  </nav>
 </header>
 
 <main>
@@ -76,6 +82,27 @@
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
+const token = localStorage.getItem('admin_token');
+const adminUser = localStorage.getItem('admin_user') || 'Admin';
+
+if (!token) {
+  window.location.href = '/login.html?redirect=/admin.html';
+} else {
+  const lbl = $('adminUserLabel');
+  if (lbl) lbl.textContent = adminUser;
+}
+
+function logout() {
+  localStorage.removeItem('admin_token');
+  localStorage.removeItem('admin_user');
+  window.location.href = '/login.html';
+}
+
+const authHeaders = (extra = {}) => ({
+  'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || ''),
+  ...extra
+});
+
 const video = $('video');
 let all = [], modelsReady = false;
 
@@ -118,12 +145,18 @@ $('enrollBtn').addEventListener('click', async () => {
 
     const r = await fetch('/api/employees', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, code, descriptors })
     });
+
+    if (r.status === 401) {
+      alert('Session expired. Please login again.');
+      return logout();
+    }
+
     const text = await r.text();
     let data = {};
-    try { data = JSON.parse(text); } catch { throw new Error(`Server returned status ${r.status}. Check API configuration.`); }
+    try { data = JSON.parse(text); } catch { throw new Error(`Server returned status ${r.status}.`); }
     if (!r.ok) return setMsg(data.error || 'Failed to enroll', 'err');
 
     setMsg(`${name} enrolled successfully (${descriptors.length} photos)`, 'ok');
@@ -138,7 +171,10 @@ $('enrollBtn').addEventListener('click', async () => {
 
 async function loadEmployees() {
   try {
-    const r = await fetch('/api/employees');
+    const r = await fetch('/api/employees', { headers: authHeaders() });
+    if (r.status === 401) {
+      return logout();
+    }
     if (!r.ok) return;
     all = await r.json();
     render();
@@ -165,7 +201,11 @@ function render() {
 
 async function removeEmp(id, name) {
   if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
-  await fetch('/api/employees/' + id, { method: 'DELETE' });
+  const res = await fetch('/api/employees/' + id, {
+    method: 'DELETE',
+    headers: authHeaders()
+  });
+  if (res.status === 401) return logout();
   loadEmployees();
 }
 

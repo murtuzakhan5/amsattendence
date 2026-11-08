@@ -47,8 +47,13 @@
   <div class="brand">ATTENDANCE · KIOSK</div>
   <div class="clock"><div class="time" id="clock"></div><div class="date" id="date"></div></div>
 </header>
-<nav style="padding:10px 28px;border-bottom:1px solid var(--line)">
-  <a href="/">Kiosk</a><a href="/dashboard.html">Dashboard</a><a href="/admin.html">Employees</a>
+<nav style="padding:10px 28px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+  <div>
+    <a href="/" style="font-weight:600;color:var(--text)">Kiosk</a>
+    <a href="/dashboard.html">Dashboard 🔒</a>
+    <a href="/admin.html">Employees 🔒</a>
+  </div>
+  <a href="/login.html" style="font-size:12px;background:#1e293b;padding:5px 12px;border-radius:6px;border:1px solid var(--line)">Admin Login</a>
 </nav>
 
 <main>

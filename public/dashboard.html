@@ -83,6 +83,7 @@
       <a data-view="log">Punch Log</a>
       <a href="/admin.html">Employees</a>
       <a href="/">Kiosk</a>
+      <a onclick="logout()" style="color:#f87171;margin-top:24px;border:1px solid rgba(239,68,68,0.25);text-align:center">Logout</a>
     </nav>
   </aside>
 
@@ -167,6 +168,22 @@ const fmtDur = ms => { if (!ms || ms <= 0) return '0h 00m'; const m = Math.round
 const initials = n => n.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
 const isToday = () => $('date').value === todayStr();
 
+const token = localStorage.getItem('admin_token');
+if (!token) {
+  window.location.href = '/login.html?redirect=/dashboard.html';
+}
+
+function logout() {
+  localStorage.removeItem('admin_token');
+  localStorage.removeItem('admin_user');
+  window.location.href = '/login.html';
+}
+
+const authHeaders = (extra = {}) => ({
+  'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || ''),
+  ...extra
+});
+
 $('date').value = todayStr();
 
 let CFG = { shiftStart: '09:30', targetHours: 8 };
@@ -197,7 +214,10 @@ async function fetchDay(date) {
 
 async function load() {
   try {
-    const empRes = await fetch('/api/employees');
+    const empRes = await fetch('/api/employees', { headers: authHeaders() });
+    if (empRes.status === 401) {
+      return logout();
+    }
     employees = empRes.ok ? await empRes.json() : [];
     records = await fetchDay($('date').value);
   } catch (e) {
