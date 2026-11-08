@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Employees | Attendance</title>
+<style>
+  :root { --bg:#f4f6fa; --card:#fff; --line:#e5e8ef; --text:#1d2433; --muted:#6b7385; --primary:#2563eb; --primary-soft:#e8efff; --red:#dc2626; --red-soft:#fee2e2; --green:#16a34a; --green-soft:#dcfce7; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); font-size:14px; }
+  header { background: var(--card); border-bottom:1px solid var(--line); padding:14px 28px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  header .brand { font-weight:700; font-size:16px; }
+  nav a { color: var(--muted); text-decoration:none; margin-left:16px; font-weight:500; }
+  nav a.active, nav a:hover { color: var(--primary); }
+  main { max-width:1100px; margin:26px auto; padding:0 20px; display:grid; gap:20px; }
+  .grid { display:grid; grid-template-columns: 1fr 1.3fr; gap:20px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; }
+  .card h2 { margin:0 0 14px; font-size:16px; }
+  label { display:block; font-size:13px; font-weight:600; color: var(--muted); margin: 10px 0 6px; }
+  input { width:100%; font:inherit; padding:10px 12px; border:1px solid var(--line); border-radius:8px; }
+  input:focus { outline:2px solid var(--primary-soft); border-color: var(--primary); }
+  video { width:100%; border-radius:10px; transform: scaleX(-1); background:#000; margin-top:12px; aspect-ratio: 4/3; object-fit: cover; }
+  button { font:inherit; font-weight:600; border:1px solid var(--line); background: var(--card); padding:10px 14px; border-radius:8px; cursor:pointer; }
+  button.primary { background: var(--primary); color:#fff; border-color: var(--primary); width:100%; margin-top:14px; }
+  button.primary:disabled { opacity:.6; cursor:wait; }
+  button.danger { color: var(--red); border-color: #fecaca; padding:6px 10px; font-size:13px; }
+  button.danger:hover { background: var(--red-soft); }
+  .msg { margin-top:12px; font-size:14px; min-height:20px; }
+  .msg.ok { color: var(--green); } .msg.err { color: var(--red); }
+  .toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+  .toolbar input { width:220px; }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color: var(--muted); padding:10px 8px; border-bottom:1px solid var(--line); }
+  td { padding:12px 8px; border-bottom:1px solid var(--line); }
+  tr:last-child td { border-bottom:none; }
+  .code { display:inline-block; background: var(--primary-soft); color: var(--primary); font-weight:600; padding:2px 8px; border-radius:6px; font-size:12px; }
+  .muted { color: var(--muted); }
+  .empty { text-align:center; color: var(--muted); padding:30px; }
+  .tip { background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:10px 12px; border-radius:8px; font-size:13px; margin-top:12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Attendance · Employee Management</div>
+  <nav><a href="/dashboard.html">Dashboard</a><a class="active" href="/admin.html">Employees</a><a href="/">Kiosk</a></nav>
+</header>
+
+<main>
+  <div class="grid">
+    <div class="card">
+      <h2>Enroll New Employee</h2>
+      <label for="name">Full name</label>
+      <input id="name" placeholder="e.g. Ali Raza">
+      <label for="code">Employee code</label>
+      <input id="code" placeholder="e.g. E001">
+      <video id="video" autoplay muted playsinline></video>
+      <button class="primary" id="enrollBtn">Capture & Save (3 photos)</button>
+      <div class="msg" id="msg"></div>
+      <div class="tip">Tip: Face the camera in good light. The system takes 3 photos, so slightly turn your head between shots.</div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <h2 style="margin:0">Employees <span class="muted" id="count"></span></h2>
+        <input id="search" placeholder="Search name or code">
+      </div>
+      <table>
+        <thead><tr><th>Code</th><th>Name</th><th>Enrolled</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const video = $('video');
+let all = [], modelsReady = false;
+
+function setMsg(text, type = '') { $('msg').textContent = text; $('msg').className = 'msg ' + type; }
+
+async function init() {
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+    await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+    video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    modelsReady = true;
+  } catch (e) { setMsg('Camera or models error: ' + e.message, 'err'); }
+  loadEmployees();
+}
+
+async function getDescriptor() {
+  const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+    .withFaceLandmarks().withFaceDescriptor();
+  return det ? Array.from(det.descriptor) : null;
+}
+
+$('enrollBtn').addEventListener('click', async () => {
+  const name = $('name').value.trim();
+  const code = $('code').value.trim();
+  if (!name || !code) return setMsg('Please enter name and employee code', 'err');
+  if (!modelsReady) return setMsg('Camera not ready yet', 'err');
+
+  const btn = $('enrollBtn');
+  btn.disabled = true;
+  const descriptors = [];
+  try {
+    for (let i = 0; i < 3; i++) {
+      setMsg(`Capturing photo ${i + 1} of 3... ${i === 0 ? 'look straight' : 'turn your head slightly'}`);
+      await new Promise(r => setTimeout(r, 1200));
+      const d = await getDescriptor();
+      if (d) descriptors.push(d);
+    }
+    if (!descriptors.length) return setMsg('No face detected. Improve lighting and try again.', 'err');
+
+    const r = await fetch('/api/employees', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, code, descriptors })
+    });
+    const data = await r.json();
+    if (!r.ok) return setMsg(data.error, 'err');
+
+    setMsg(`${name} enrolled successfully (${descriptors.length} photos)`, 'ok');
+    $('name').value = ''; $('code').value = '';
+    loadEmployees();
+  } catch (e) {
+    setMsg('Error: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+async function loadEmployees() {
+  all = await fetch('/api/employees').then(r => r.json());
+  render();
+}
+
+function render() {
+  const q = $('search').value.trim().toLowerCase();
+  const list = all
+    .filter(e => !q || e.name.toLowerCase().includes(q) || e.code.toLowerCase().includes(q))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  $('count').textContent = `(${all.length})`;
+  $('rows').innerHTML = list.length ? list.map(e => `
+    <tr>
+      <td><span class="code">${esc(e.code)}</span></td>
+      <td>${esc(e.name)}</td>
+      <td class="muted">${new Date(e.enrolledAt).toLocaleDateString('en-GB')}</td>
+      <td><button class="danger" onclick="removeEmp('${e.id}', '${esc(e.name)}')">Delete</button></td>
+    </tr>`).join('')
+    : `<tr><td colspan="4" class="empty">No employees found</td></tr>`;
+}
+
+async function removeEmp(id, name) {
+  if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+  await fetch('/api/employees/' + id, { method: 'DELETE' });
+  loadEmployees();
+}
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+$('search').addEventListener('input', render);
+init();
+</script>
+</body>
+</html>

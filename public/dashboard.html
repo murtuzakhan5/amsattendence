@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard | Attendance</title>
+<style>
+  :root { --bg:#f4f6fa; --card:#fff; --line:#e5e8ef; --text:#1d2433; --muted:#6b7385; --primary:#2563eb; --primary-soft:#e8efff; --green:#16a34a; --green-soft:#dcfce7; --red:#dc2626; --red-soft:#fee2e2; --amber:#d97706; --amber-soft:#fef3c7; --gray-soft:#eef0f4; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); font-size:14px; }
+  .layout { display:grid; grid-template-columns: 220px 1fr; min-height:100vh; }
+  aside { background:#0f172a; color:#cbd5e1; padding:22px 16px; }
+  .brand { color:#fff; font-size:17px; font-weight:700; margin:0 0 28px 8px; }
+  .brand small { display:block; font-size:11px; font-weight:500; color:#64748b; letter-spacing:.08em; text-transform:uppercase; }
+  .nav a { display:block; color:#cbd5e1; text-decoration:none; padding:10px 12px; border-radius:8px; margin-bottom:4px; font-weight:500; cursor:pointer; }
+  .nav a:hover { background:#1e293b; color:#fff; }
+  .nav a.active { background: var(--primary); color:#fff; }
+  main { padding:26px 30px; min-width:0; }
+  header.top { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:22px; }
+  h1 { font-size:22px; margin:0; } .sub { color:var(--muted); margin-top:4px; }
+  .controls { display:flex; gap:10px; flex-wrap:wrap; }
+  input, select, button { font:inherit; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; padding:9px 12px; }
+  button { cursor:pointer; font-weight:600; }
+  button.primary { background: var(--primary); border-color: var(--primary); color:#fff; }
+  .kpis { display:grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap:16px; margin-bottom:22px; }
+  .kpi { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
+  .kpi .label { color:var(--muted); font-size:13px; font-weight:500; }
+  .kpi .value { font-size:30px; font-weight:700; margin-top:8px; }
+  .kpi .hint { font-size:12px; color:var(--muted); margin-top:4px; }
+  .grid2 { display:grid; grid-template-columns: 2fr 1fr; gap:18px; margin-bottom:22px; }
+  @media (max-width: 1000px) { .grid2 { grid-template-columns:1fr; } .layout { grid-template-columns: 1fr; } aside { display:none; } }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
+  .panel h3 { margin:0 0 14px; font-size:15px; }
+  .bars { display:flex; align-items:flex-end; gap:14px; height:170px; }
+  .bar-col { flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; }
+  .bar { width:100%; max-width:46px; background: var(--primary); border-radius:6px 6px 0 0; min-height:3px; }
+  .bar-col.today .bar { background:#1e40af; }
+  .bar-val { font-size:12px; font-weight:600; margin-bottom:6px; }
+  .bar-lbl { font-size:12px; color:var(--muted); margin-top:8px; }
+  .table-card { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  .table-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:16px 18px; border-bottom:1px solid var(--line); }
+  .table-head h3 { margin:0; font-size:15px; }
+  .tabs { display:flex; gap:6px; }
+  .tab { border:none; background:none; color:var(--muted); padding:7px 12px; border-radius:8px; }
+  .tab.active { background: var(--primary-soft); color: var(--primary); }
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; min-width:820px; }
+  th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600; padding:12px 18px; background:#fafbfd; border-bottom:1px solid var(--line); }
+  td { padding:13px 18px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr.clickable { cursor:pointer; } tr.clickable:hover td { background:#f8faff; }
+  .person { display:flex; align-items:center; gap:12px; }
+  .avatar { width:36px; height:36px; border-radius:50%; background:var(--primary-soft); color:var(--primary); font-weight:700; display:grid; place-items:center; font-size:13px; flex-shrink:0; }
+  .name { font-weight:600; } .code { font-size:12px; color:var(--muted); }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .pill::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .pill.in { background:var(--green-soft); color:var(--green); }
+  .pill.out { background:var(--gray-soft); color:#475569; }
+  .pill.absent { background:var(--red-soft); color:var(--red); }
+  .late { margin-left:6px; background:var(--amber-soft); color:var(--amber); padding:2px 7px; border-radius:6px; font-size:11px; font-weight:700; }
+  .progress { height:6px; background:var(--gray-soft); border-radius:99px; margin-top:6px; overflow:hidden; min-width:120px; }
+  .progress span { display:block; height:100%; background:var(--primary); border-radius:99px; }
+  .punches { display:flex; flex-wrap:wrap; gap:6px; }
+  .pch { font-size:12px; padding:3px 8px; border-radius:6px; background:var(--gray-soft); color:#334155; }
+  .pch.IN { background:var(--green-soft); color:var(--green); }
+  .muted { color:var(--muted); }
+  .empty { text-align:center; color:var(--muted); padding:40px; }
+  .overlay { position:fixed; inset:0; background:rgba(15,23,42,.45); display:none; align-items:center; justify-content:center; padding:20px; }
+  .overlay.show { display:flex; }
+  .modal { background:var(--card); border-radius:16px; width:100%; max-width:440px; padding:22px; }
+  .modal h3 { margin:0 0 4px; }
+  .modal .row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
+  .modal .row:last-child { border-bottom:none; }
+  .modal button { width:100%; margin-top:16px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <div class="brand">ATTENDANCE<small>Management System</small></div>
+    <nav class="nav">
+      <a class="active" data-view="dashboard">Dashboard</a>
+      <a data-view="log">Punch Log</a>
+      <a href="/admin.html">Employees</a>
+      <a href="/">Kiosk</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="top">
+      <div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <div class="sub" id="pageSub"></div>
+      </div>
+      <div class="controls">
+        <input type="date" id="date">
+        <input type="text" id="search" placeholder="Search name or code">
+        <select id="filter">
+          <option value="all">All statuses</option>
+          <option value="in">In office</option>
+          <option value="out">Checked out</option>
+          <option value="absent">Absent</option>
+          <option value="late">Late arrival</option>
+        </select>
+        <button class="primary" id="exportBtn">Export CSV</button>
+      </div>
+    </header>
+
+    <section id="view-dashboard">
+      <div class="kpis">
+        <div class="kpi"><div class="label">Total Employees</div><div class="value" id="kTotal">0</div><div class="hint">Enrolled staff</div></div>
+        <div class="kpi"><div class="label">Present</div><div class="value" id="kPresent">0</div><div class="hint" id="kPct">—</div></div>
+        <div class="kpi"><div class="label">In Office Now</div><div class="value" id="kInside">0</div><div class="hint">Checked in, not out</div></div>
+        <div class="kpi"><div class="label">Late Arrivals</div><div class="value" id="kLate">0</div><div class="hint">After <span id="shiftLbl"></span></div></div>
+        <div class="kpi"><div class="label">Absent</div><div class="value" id="kAbsent">0</div><div class="hint">No punch recorded</div></div>
+        <div class="kpi"><div class="label">Avg. Hours</div><div class="value" id="kAvg">0h</div><div class="hint">Of those present</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="panel"><h3>Attendance – Last 7 Days</h3><div class="bars" id="weekBars"></div></div>
+        <div class="panel"><h3>Status Breakdown</h3><div id="breakdown"></div></div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-head">
+          <h3>Employee Attendance</h3>
+          <div class="muted" id="tableCount"></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Employee</th><th>Status</th><th>First In</th><th>Last Out</th><th>Hours Worked</th><th>Punches</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-log" style="display:none">
+      <div class="table-card">
+        <div class="table-head"><h3>Punch Log</h3><div class="muted" id="logCount"></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Time</th><th>Employee</th><th>Code</th><th>Event</th></tr></thead>
+            <tbody id="logRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="mName"></h3>
+    <div class="muted" id="mMeta"></div>
+    <div id="mList" style="margin-top:14px"></div>
+    <button id="mClose">Close</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const todayStr = () => new Date().toLocaleDateString('en-CA');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const fmtTime = ms => new Date(ms).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+const fmtDur = ms => { if (!ms || ms <= 0) return '0h 00m'; const m = Math.round(ms / 60000); return `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}m`; };
+const initials = n => n.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+const isToday = () => $('date').value === todayStr();
+
+$('date').value = todayStr();
+
+let CFG = { shiftStart: '09:30', targetHours: 8 };
+let employees = [], records = [], rowsData = [];
+
+const shiftMin = () => { const [h, m] = CFG.shiftStart.split(':').map(Number); return h * 60 + m; };
+const minOfDay = ms => { const d = new Date(ms); return d.getHours() * 60 + d.getMinutes(); };
+
+function summarize(emp, recs) {
+  const mine = recs.filter(r => r.employeeId === emp.id).sort((a, b) => a.time - b.time);
+  let worked = 0, openIn = null, firstIn = null, lastOut = null;
+  for (const r of mine) {
+    if (r.type === 'IN') { openIn = r.time; if (!firstIn) firstIn = r; }
+    else { if (openIn) { worked += r.time - openIn; openIn = null; } lastOut = r; }
+  }
+  if (openIn && isToday()) worked += Date.now() - openIn;
+  const status = !mine.length ? 'absent' : mine[mine.length - 1].type === 'IN' ? 'in' : 'out';
+  const late = firstIn ? minOfDay(firstIn.time) > shiftMin() : false;
+  return { mine, worked, firstIn, lastOut, status, late };
+}
+
+async function fetchDay(date) { return fetch('/api/attendance?date=' + date).then(r => r.json()); }
+
+async function load() {
+  [employees, records] = await Promise.all([
+    fetch('/api/employees').then(r => r.json()),
+    fetchDay($('date').value),
+  ]);
+  const d = new Date($('date').value + 'T00:00:00');
+  $('pageSub').textContent = d.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  render(); renderWeek(); renderLog();
+}
+
+function render() {
+  const q = $('search').value.trim().toLowerCase();
+  const f = $('filter').value;
+  rowsData = employees.map(e => ({ emp: e, ...summarize(e, records) }));
+
+  const present = rowsData.filter(r => r.status !== 'absent');
+  const inside = rowsData.filter(r => r.status === 'in');
+  const late = rowsData.filter(r => r.late);
+  const avg = present.length ? present.reduce((s, r) => s + r.worked, 0) / present.length : 0;
+
+  $('kTotal').textContent = employees.length;
+  $('kPresent').textContent = present.length;
+  $('kPct').textContent = employees.length ? Math.round(present.length / employees.length * 100) + '% attendance' : '—';
+  $('kInside').textContent = inside.length;
+  $('kLate').textContent = late.length;
+  $('kAbsent').textContent = employees.length - present.length;
+  $('kAvg').textContent = fmtDur(avg);
+  $('shiftLbl').textContent = CFG.shiftStart;
+
+  const total = employees.length || 1;
+  const outCount = rowsData.filter(r => r.status === 'out').length;
+  $('breakdown').innerHTML = [
+    ['In office', inside.length, 'var(--green)'],
+    ['Checked out', outCount, '#64748b'],
+    ['Absent', employees.length - present.length, 'var(--red)'],
+    ['Late arrivals', late.length, 'var(--amber)'],
+  ].map(([l, n, c]) => `
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>${l}</span><strong>${n}</strong></div>
+      <div class="progress"><span style="width:${Math.round(n / total * 100)}%;background:${c}"></span></div>
+    </div>`).join('');
+
+  const visible = rowsData
+    .filter(r => f === 'all' || r.status === f || (f === 'late' && r.late))
+    .filter(r => !q || r.emp.name.toLowerCase().includes(q) || r.emp.code.toLowerCase().includes(q))
+    .sort((a, b) => a.emp.name.localeCompare(b.emp.name));
+
+  $('tableCount').textContent = `Showing ${visible.length} of ${employees.length}`;
+  if (!visible.length) { $('rows').innerHTML = `<tr><td colspan="6" class="empty">No employees match the current filter.</td></tr>`; return; }
+
+  const label = { in:'In office', out:'Checked out', absent:'Absent' };
+  $('rows').innerHTML = visible.map((r, i) => {
+    const pct = Math.min(100, Math.round(r.worked / (CFG.targetHours * 3600000) * 100));
+    const punches = r.mine.length
+      ? r.mine.map(p => `<span class="pch ${p.type}">${p.type} ${fmtTime(p.time)}</span>`).join('')
+      : '<span class="muted">No punches</span>';
+    return `<tr class="clickable" data-i="${i}">
+      <td><div class="person"><div class="avatar">${esc(initials(r.emp.name))}</div>
+        <div><div class="name">${esc(r.emp.name)}</div><div class="code">${esc(r.emp.code)}</div></div></div></td>
+      <td><span class="pill ${r.status}">${label[r.status]}</span></td>
+      <td>${r.firstIn ? fmtTime(r.firstIn.time) : '<span class="muted">—</span>'}${r.late ? '<span class="late">LATE</span>' : ''}</td>
+      <td>${r.lastOut ? fmtTime(r.lastOut.time) : '<span class="muted">—</span>'}</td>
+      <td><div>${r.mine.length ? fmtDur(r.worked) : '—'}</div><div class="progress"><span style="width:${pct}%"></span></div></td>
+      <td><div class="punches">${punches}</div></td>
+    </tr>`;
+  }).join('');
+
+  document.querySelectorAll('tr.clickable').forEach(tr =>
+    tr.addEventListener('click', () => openModal(visible[+tr.dataset.i])));
+}
+
+function renderWeek() {
+  const base = new Date($('date').value + 'T00:00:00');
+  const days = [...Array(7)].map((_, i) => { const d = new Date(base); d.setDate(base.getDate() - (6 - i)); return d.toLocaleDateString('en-CA'); });
+  Promise.all(days.map(fetchDay)).then(all => {
+    const counts = all.map(recs => new Set(recs.filter(r => r.type === 'IN').map(r => r.employeeId)).size);
+    const max = Math.max(1, ...counts);
+    $('weekBars').innerHTML = days.map((d, i) => {
+      const lbl = new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+      return `<div class="bar-col ${i === 6 ? 'today' : ''}">
+        <div class="bar-val">${counts[i]}</div>
+        <div class="bar" style="height:${Math.round(counts[i] / max * 100)}%"></div>
+        <div class="bar-lbl">${lbl}</div></div>`;
+    }).join('');
+  });
+}
+
+function renderLog() {
+  const list = [...records].sort((a, b) => b.time - a.time);
+  $('logCount').textContent = `${list.length} events`;
+  $('logRows').innerHTML = list.length ? list.map(r => `<tr>
+      <td>${fmtTime(r.time)}</td><td>${esc(r.name)}</td><td>${esc(r.code)}</td>
+      <td><span class="pill ${r.type === 'IN' ? 'in' : 'out'}">${r.type === 'IN' ? 'Check In' : 'Check Out'}</span></td></tr>`).join('')
+    : `<tr><td colspan="4" class="empty">No punches recorded for this date.</td></tr>`;
+}
+
+function openModal(r) {
+  $('mName').textContent = r.emp.name;
+  $('mMeta').textContent = `${r.emp.code} · ${fmtDur(r.worked)} worked`;
+  $('mList').innerHTML = r.mine.length
+    ? r.mine.map(p => `<div class="row"><span>${p.type === 'IN' ? 'Check In' : 'Check Out'}</span><strong>${fmtTime(p.time)}</strong></div>`).join('')
+    : '<div class="muted">No punches on this date.</div>';
+  $('overlay').classList.add('show');
+}
+
+function exportCSV() {
+  const header = ['Code','Name','Status','First In','Last Out','Hours Worked','Late','Punches'];
+  const lines = rowsData.map(r => [
+    r.emp.code, r.emp.name, r.status,
+    r.firstIn ? fmtTime(r.firstIn.time) : '', r.lastOut ? fmtTime(r.lastOut.time) : '',
+    fmtDur(r.worked), r.late ? 'Yes' : 'No',
+    r.mine.map(p => `${p.type} ${fmtTime(p.time)}`).join(' | '),
+  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+  const blob = new Blob([[header.join(','), ...lines].join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `attendance-${$('date').value}.csv`;
+  a.click();
+}
+
+document.querySelectorAll('.nav a[data-view]').forEach(a => a.addEventListener('click', () => {
+  document.querySelectorAll('.nav a').forEach(x => x.classList.remove('active'));
+  a.classList.add('active');
+  const v = a.dataset.view;
+  $('view-dashboard').style.display = v === 'dashboard' ? '' : 'none';
+  $('view-log').style.display = v === 'log' ? '' : 'none';
+  $('pageTitle').textContent = v === 'dashboard' ? 'Dashboard' : 'Punch Log';
+}));
+
+$('date').addEventListener('change', load);
+$('search').addEventListener('input', render);
+$('filter').addEventListener('change', render);
+$('exportBtn').addEventListener('click', exportCSV);
+$('mClose').addEventListener('click', () => $('overlay').classList.remove('show'));
+$('overlay').addEventListener('click', e => { if (e.target.id === 'overlay') $('overlay').classList.remove('show'); });
+
+fetch('/api/config').then(r => r.json()).then(c => { CFG = c; load(); });
+setInterval(() => { if (isToday()) load(); }, 30000);
+</script>
+</body>
+</html>

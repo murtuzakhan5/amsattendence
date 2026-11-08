@@ -1,0 +1,13 @@
+{
+  "name": "attendance-app",
+  "version": "2.0.0",
+  "description": "Face recognition attendance system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "download-models": "bash scripts/download-models.sh"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

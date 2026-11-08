@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check-In Kiosk | Attendance</title>
+<style>
+  :root { --bg:#0b1020; --card:#131a2e; --line:#23304f; --text:#e8ecf7; --muted:#8a96b4; --green:#22c55e; --red:#ef4444; --amber:#f59e0b; --blue:#3b82f6; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:18px 28px; border-bottom:1px solid var(--line); }
+  .brand { font-weight:700; letter-spacing:.04em; }
+  .clock { text-align:right; }
+  .clock .time { font-size:22px; font-weight:700; font-variant-numeric: tabular-nums; }
+  .clock .date { font-size:13px; color: var(--muted); }
+  nav a { color: var(--muted); text-decoration:none; margin-left:16px; font-size:14px; }
+  nav a:hover { color: var(--text); }
+  main { display:grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); gap:24px; padding:24px 28px; max-width:1200px; margin:auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; }
+  .camera { position:relative; border-radius:12px; overflow:hidden; background:#000; aspect-ratio: 4/3; }
+  video { width:100%; height:100%; object-fit:cover; transform: scaleX(-1); display:block; }
+  .frame { position:absolute; inset:12%; border:2px dashed rgba(255,255,255,.35); border-radius:50%; pointer-events:none; }
+  .hint { color: var(--muted); font-size:14px; margin-top:12px; text-align:center; }
+  .result { min-height: 220px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+  .result .icon { width:76px; height:76px; border-radius:50%; display:grid; place-items:center; font-size:34px; font-weight:700; margin-bottom:14px; }
+  .result.ok-IN .icon { background: rgba(34,197,94,.15); color: var(--green); }
+  .result.ok-OUT .icon { background: rgba(148,163,184,.15); color: #cbd5e1; }
+  .result.err .icon { background: rgba(239,68,68,.15); color: var(--red); }
+  .result.idle .icon { background: rgba(59,130,246,.15); color: var(--blue); }
+  .result h2 { margin:0 0 6px; font-size:26px; }
+  .result p { margin:0; color: var(--muted); font-size:15px; }
+  .status-type { font-size:15px; font-weight:700; letter-spacing:.06em; margin-top:8px; }
+  h3 { margin:0 0 12px; font-size:15px; color: var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+  .feed { list-style:none; margin:0; padding:0; }
+  .feed li { display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .feed li:last-child { border-bottom:none; }
+  .pill { font-size:12px; font-weight:700; padding:3px 9px; border-radius:999px; }
+  .pill.IN { background: rgba(34,197,94,.15); color: var(--green); }
+  .pill.OUT { background: rgba(148,163,184,.15); color: #cbd5e1; }
+  .muted { color: var(--muted); }
+  .loading { position:absolute; inset:0; display:grid; place-items:center; background: rgba(0,0,0,.6); font-size:15px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">ATTENDANCE · KIOSK</div>
+  <div class="clock"><div class="time" id="clock"></div><div class="date" id="date"></div></div>
+</header>
+<nav style="padding:10px 28px;border-bottom:1px solid var(--line)">
+  <a href="/">Kiosk</a><a href="/dashboard.html">Dashboard</a><a href="/admin.html">Employees</a>
+</nav>
+
+<main>
+  <div class="card">
+    <div class="camera">
+      <video id="video" autoplay muted playsinline></video>
+      <div class="frame"></div>
+      <div class="loading" id="loading">Loading face models...</div>
+    </div>
+    <div class="hint">Look straight at the camera. Check-in and check-out are automatic.</div>
+  </div>
+
+  <div>
+    <div class="card result idle" id="result">
+      <div class="icon" id="icon">●</div>
+      <h2 id="title">Please wait</h2>
+      <p id="sub">Starting camera...</p>
+      <div class="status-type" id="ptype"></div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3>Today's latest activity</h3>
+      <ul class="feed" id="feed"><li class="muted">No activity yet</li></ul>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const video = $('video');
+let busy = false, ready = false;
+
+function tickClock() {
+  const n = new Date();
+  $('clock').textContent = n.toLocaleTimeString('en-GB');
+  $('date').textContent = n.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+setInterval(tickClock, 1000); tickClock();
+
+function setResult(state, title, sub, type = '') {
+  const el = $('result');
+  el.className = 'card result ' + state + (type ? ' ok-' + type : '');
+  $('icon').textContent = state === 'err' ? '✕' : state === 'idle' ? '●' : (type === 'IN' ? '↓' : '↑');
+  $('title').textContent = title;
+  $('sub').textContent = sub;
+  $('ptype').textContent = type ? (type === 'IN' ? 'CHECKED IN' : 'CHECKED OUT') : '';
+}
+
+async function loadFeed() {
+  const today = new Date().toLocaleDateString('en-CA');
+  const recs = await fetch('/api/attendance?date=' + today).then(r => r.json());
+  const last = recs.slice().sort((a, b) => b.time - a.time).slice(0, 6);
+  $('feed').innerHTML = last.length
+    ? last.map(r => `<li><span>${r.name} <span class="muted">(${r.code})</span></span>
+        <span><span class="pill ${r.type}">${r.type}</span> <span class="muted">${new Date(r.time).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'})}</span></span></li>`).join('')
+    : '<li class="muted">No activity yet</li>';
+}
+
+async function init() {
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+    await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+    video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    $('loading').style.display = 'none';
+    ready = true;
+    setResult('idle', 'Ready', 'Please look at the camera');
+    loadFeed();
+    setInterval(scan, 800);
+  } catch (e) {
+    $('loading').textContent = 'Error: ' + e.message;
+    setResult('err', 'Camera or models unavailable', e.message);
+  }
+}
+
+async function scan() {
+  if (!ready || busy) return;
+  const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+    .withFaceLandmarks().withFaceDescriptor();
+  if (!det) return;
+
+  busy = true;
+  try {
+    const r = await fetch('/api/mark', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ descriptor: Array.from(det.descriptor) })
+    });
+    const data = await r.json();
+    if (r.ok) {
+      if (data.duplicate) {
+        setResult('ok', data.name, `Already recorded at ${data.timeStr}. Please wait before punching again.`, data.type);
+      } else {
+        setResult('ok', data.name, `Recorded at ${data.timeStr}`, data.type);
+        loadFeed();
+      }
+    } else {
+      setResult('err', 'Not recognized', data.error || 'Please try again');
+    }
+  } catch (e) {
+    setResult('err', 'Connection error', 'Cannot reach the server');
+  }
+  setTimeout(() => { busy = false; }, 2500);
+}
+
+init();
+</script>
+</body>
+</html>
