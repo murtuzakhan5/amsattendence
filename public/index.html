@@ -99,13 +99,19 @@ function setResult(state, title, sub, type = '') {
 }
 
 async function loadFeed() {
-  const today = new Date().toLocaleDateString('en-CA');
-  const recs = await fetch('/api/attendance?date=' + today).then(r => r.json());
-  const last = recs.slice().sort((a, b) => b.time - a.time).slice(0, 6);
-  $('feed').innerHTML = last.length
-    ? last.map(r => `<li><span>${r.name} <span class="muted">(${r.code})</span></span>
-        <span><span class="pill ${r.type}">${r.type}</span> <span class="muted">${new Date(r.time).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'})}</span></span></li>`).join('')
-    : '<li class="muted">No activity yet</li>';
+  try {
+    const today = new Date().toLocaleDateString('en-CA');
+    const r = await fetch('/api/attendance?date=' + today);
+    if (!r.ok) return;
+    const recs = await r.json();
+    const last = recs.slice().sort((a, b) => b.time - a.time).slice(0, 6);
+    $('feed').innerHTML = last.length
+      ? last.map(r => `<li><span>${r.name} <span class="muted">(${r.code})</span></span>
+          <span><span class="pill ${r.type}">${r.type}</span> <span class="muted">${new Date(r.time).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'})}</span></span></li>`).join('')
+      : '<li class="muted">No activity yet</li>';
+  } catch (e) {
+    console.error('Failed to load feed:', e);
+  }
 }
 
 async function init() {

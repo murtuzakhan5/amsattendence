@@ -188,13 +188,22 @@ function summarize(emp, recs) {
   return { mine, worked, firstIn, lastOut, status, late };
 }
 
-async function fetchDay(date) { return fetch('/api/attendance?date=' + date).then(r => r.json()); }
+async function fetchDay(date) {
+  try {
+    const r = await fetch('/api/attendance?date=' + date);
+    return r.ok ? await r.json() : [];
+  } catch { return []; }
+}
 
 async function load() {
-  [employees, records] = await Promise.all([
-    fetch('/api/employees').then(r => r.json()),
-    fetchDay($('date').value),
-  ]);
+  try {
+    const empRes = await fetch('/api/employees');
+    employees = empRes.ok ? await empRes.json() : [];
+    records = await fetchDay($('date').value);
+  } catch (e) {
+    console.error('Failed to load dashboard data:', e);
+    employees = []; records = [];
+  }
   const d = new Date($('date').value + 'T00:00:00');
   $('pageSub').textContent = d.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   render(); renderWeek(); renderLog();

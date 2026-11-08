@@ -121,8 +121,10 @@ $('enrollBtn').addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, code, descriptors })
     });
-    const data = await r.json();
-    if (!r.ok) return setMsg(data.error, 'err');
+    const text = await r.text();
+    let data = {};
+    try { data = JSON.parse(text); } catch { throw new Error(`Server returned status ${r.status}. Check API configuration.`); }
+    if (!r.ok) return setMsg(data.error || 'Failed to enroll', 'err');
 
     setMsg(`${name} enrolled successfully (${descriptors.length} photos)`, 'ok');
     $('name').value = ''; $('code').value = '';
@@ -135,8 +137,14 @@ $('enrollBtn').addEventListener('click', async () => {
 });
 
 async function loadEmployees() {
-  all = await fetch('/api/employees').then(r => r.json());
-  render();
+  try {
+    const r = await fetch('/api/employees');
+    if (!r.ok) return;
+    all = await r.json();
+    render();
+  } catch (e) {
+    console.error('Failed to load employees:', e);
+  }
 }
 
 function render() {

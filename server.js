@@ -2,6 +2,8 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 
+const os = require('os');
+
 // ---------- Configuration ----------
 const CONFIG = {
   port: process.env.PORT || 3000,
@@ -11,19 +13,43 @@ const CONFIG = {
   targetHours: Number(process.env.TARGET_HOURS || 8),
 };
 
-const DB_FILE = path.join(__dirname, 'data.json');
+const isVercel = Boolean(process.env.VERCEL);
+const DB_FILE = isVercel
+  ? path.join(os.tmpdir(), 'attendance-data.json')
+  : path.join(__dirname, 'data.json');
+
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------- Storage (atomic JSON file) ----------
+function ensureDir(filePath) {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
 function load() {
+  ensureDir(DB_FILE);
   if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify({ employees: [], attendance: [] }, null, 2));
+    const seed = path.join(__dirname, 'data.json');
+    if (isVercel && fs.existsSync(seed)) {
+      try {
+        fs.copyFileSync(seed, DB_FILE);
+      } catch (e) {
+        fs.writeFileSync(DB_FILE, JSON.stringify({ employees: [], attendance: [] }, null, 2));
+      }
+    } else {
+      fs.writeFileSync(DB_FILE, JSON.stringify({ employees: [], attendance: [] }, null, 2));
+    }
   }
-  return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+  try {
+    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+  } catch (e) {
+    return { employees: [], attendance: [] };
+  }
 }
 function save(db) {
+  ensureDir(DB_FILE);
   const tmp = DB_FILE + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(db, null, 2));
   fs.renameSync(tmp, DB_FILE);
@@ -124,9 +150,13 @@ app.get('/api/attendance', (req, res) => {
   res.json(db.attendance.filter(a => a.date === date));
 });
 
-app.listen(CONFIG.port, () => {
-  console.log(`Attendance server running at http://localhost:${CONFIG.port}`);
-  console.log(`  Kiosk:     http://localhost:${CONFIG.port}/`);
-  console.log(`  Admin:     http://localhost:${CONFIG.port}/admin.html`);
-  console.log(`  Dashboard: http://localhost:${CONFIG.port}/dashboard.html`);
-});
+if (!process.env.VERCEL) {
+  app.listen(CONFIG.port, () => {
+    console.log(`Attendance server running at http://localhost:${CONFIG.port}`);
+    console.log(`  Kiosk:     http://localhost:${CONFIG.port}/`);
+    console.log(`  Admin:     http://localhost:${CONFIG.port}/admin.html`);
+    console.log(`  Dashboard: http://localhost:${CONFIG.port}/dashboard.html`);
+  });
+}
+
+module.exports = app;
