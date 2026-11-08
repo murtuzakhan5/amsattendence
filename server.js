@@ -16,31 +16,35 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://abdulrafaykhan1017
 const DB_NAME = process.env.DB_NAME || 'attendance_db';
 
 let cachedClient = null;
-let cachedDb = null;
 let indexesCreated = false;
 
 async function getDb() {
-  if (cachedDb) return cachedDb;
-  if (!cachedClient) {
-    cachedClient = new MongoClient(MONGODB_URI, {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-    });
-    await cachedClient.connect();
-  }
-  cachedDb = cachedClient.db(DB_NAME);
-
-  if (!indexesCreated) {
-    try {
-      await cachedDb.collection('employees').createIndex({ code: 1 });
-      await cachedDb.collection('attendance').createIndex({ date: 1, employeeId: 1 });
-      indexesCreated = true;
-    } catch (e) {
-      // index warning ignored
+  try {
+    if (!cachedClient) {
+      cachedClient = new MongoClient(MONGODB_URI, {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 15000,
+        connectTimeoutMS: 15000,
+      });
+      await cachedClient.connect();
     }
-  }
+    const db = cachedClient.db(DB_NAME);
 
-  return cachedDb;
+    if (!indexesCreated) {
+      try {
+        await db.collection('employees').createIndex({ code: 1 });
+        await db.collection('attendance').createIndex({ date: 1, employeeId: 1 });
+        indexesCreated = true;
+      } catch (e) {
+        // index warning ignored
+      }
+    }
+
+    return db;
+  } catch (err) {
+    cachedClient = null;
+    throw err;
+  }
 }
 
 const app = express();
@@ -77,7 +81,7 @@ app.get('/api/employees', async (req, res) => {
     })));
   } catch (err) {
     console.error('Error fetching employees from MongoDB:', err);
-    res.status(500).json({ error: 'Failed to load employees from database' });
+    res.status(500).json({ error: 'Database error: ' + (err.message || 'Failed to load employees') });
   }
 });
 
@@ -108,7 +112,7 @@ app.post('/api/employees', async (req, res) => {
     res.status(201).json({ ok: true, id: emp.id });
   } catch (err) {
     console.error('Error adding employee to MongoDB:', err);
-    res.status(500).json({ error: 'Failed to save employee to database' });
+    res.status(500).json({ error: 'Database error: ' + (err.message || 'Failed to save employee') });
   }
 });
 
@@ -123,7 +127,7 @@ app.delete('/api/employees/:id', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error('Error deleting employee from MongoDB:', err);
-    res.status(500).json({ error: 'Failed to delete employee' });
+    res.status(500).json({ error: 'Database error: ' + (err.message || 'Failed to delete employee') });
   }
 });
 
@@ -174,7 +178,7 @@ app.post('/api/mark', async (req, res) => {
     res.json({ ok: true, duplicate: false, name: best.name, code: best.code, type, timeStr: timeStr(now) });
   } catch (err) {
     console.error('Error marking attendance in MongoDB:', err);
-    res.status(500).json({ error: 'Failed to record attendance' });
+    res.status(500).json({ error: 'Database error: ' + (err.message || 'Failed to record attendance') });
   }
 });
 
@@ -197,7 +201,7 @@ app.get('/api/attendance', async (req, res) => {
     })));
   } catch (err) {
     console.error('Error fetching attendance from MongoDB:', err);
-    res.status(500).json({ error: 'Failed to load attendance records' });
+    res.status(500).json({ error: 'Database error: ' + (err.message || 'Failed to load attendance records') });
   }
 });
 
