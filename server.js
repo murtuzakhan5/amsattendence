@@ -1,8 +1,6 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
-
-const os = require('os');
+const { MongoClient } = require('mongodb');
 
 // ---------- Configuration ----------
 const CONFIG = {
@@ -13,47 +11,41 @@ const CONFIG = {
   targetHours: Number(process.env.TARGET_HOURS || 8),
 };
 
-const isVercel = Boolean(process.env.VERCEL);
-const DB_FILE = isVercel
-  ? path.join(os.tmpdir(), 'attendance-data.json')
-  : path.join(__dirname, 'data.json');
+// ---------- MongoDB Connection ----------
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://abdulrafaykhan1017_db_user:ZkOQdlV4uSY4DFKD@cluster0.efoo79r.mongodb.net/attendance_db?retryWrites=true&w=majority';
+const DB_NAME = process.env.DB_NAME || 'attendance_db';
+
+let cachedClient = null;
+let cachedDb = null;
+let indexesCreated = false;
+
+async function getDb() {
+  if (cachedDb) return cachedDb;
+  if (!cachedClient) {
+    cachedClient = new MongoClient(MONGODB_URI, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+    });
+    await cachedClient.connect();
+  }
+  cachedDb = cachedClient.db(DB_NAME);
+
+  if (!indexesCreated) {
+    try {
+      await cachedDb.collection('employees').createIndex({ code: 1 });
+      await cachedDb.collection('attendance').createIndex({ date: 1, employeeId: 1 });
+      indexesCreated = true;
+    } catch (e) {
+      // index warning ignored
+    }
+  }
+
+  return cachedDb;
+}
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
-
-// ---------- Storage (atomic JSON file) ----------
-function ensureDir(filePath) {
-  const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
-
-function load() {
-  ensureDir(DB_FILE);
-  if (!fs.existsSync(DB_FILE)) {
-    const seed = path.join(__dirname, 'data.json');
-    if (isVercel && fs.existsSync(seed)) {
-      try {
-        fs.copyFileSync(seed, DB_FILE);
-      } catch (e) {
-        fs.writeFileSync(DB_FILE, JSON.stringify({ employees: [], attendance: [] }, null, 2));
-      }
-    } else {
-      fs.writeFileSync(DB_FILE, JSON.stringify({ employees: [], attendance: [] }, null, 2));
-    }
-  }
-  try {
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-  } catch (e) {
-    return { employees: [], attendance: [] };
-  }
-}
-function save(db) {
-  ensureDir(DB_FILE);
-  const tmp = DB_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(db, null, 2));
-  fs.renameSync(tmp, DB_FILE);
-}
 
 // ---------- Helpers ----------
 function distance(a, b) {
@@ -64,6 +56,7 @@ function distance(a, b) {
 const isValidDescriptor = d => Array.isArray(d) && d.length === 128 && d.every(Number.isFinite);
 const todayStr = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD (server local time)
 const timeStr = ms => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const escapeRegex = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // ---------- Config endpoint (used by dashboard) ----------
 app.get('/api/config', (req, res) => {
@@ -71,83 +64,141 @@ app.get('/api/config', (req, res) => {
 });
 
 // ---------- Employees ----------
-app.get('/api/employees', (req, res) => {
-  const db = load();
-  res.json(db.employees.map(e => ({ id: e.id, name: e.name, code: e.code, enrolledAt: e.enrolledAt, faces: e.descriptors.length })));
+app.get('/api/employees', async (req, res) => {
+  try {
+    const db = await getDb();
+    const employees = await db.collection('employees').find({}).toArray();
+    res.json(employees.map(e => ({
+      id: e.id || e._id.toString(),
+      name: e.name,
+      code: e.code,
+      enrolledAt: e.enrolledAt,
+      faces: (e.descriptors || []).length
+    })));
+  } catch (err) {
+    console.error('Error fetching employees from MongoDB:', err);
+    res.status(500).json({ error: 'Failed to load employees from database' });
+  }
 });
 
-app.post('/api/employees', (req, res) => {
-  const { name, code, descriptors } = req.body || {};
-  if (!name || !code || !Array.isArray(descriptors) || descriptors.length === 0)
-    return res.status(400).json({ error: 'Name, code and face data are required' });
-  if (!descriptors.every(isValidDescriptor))
-    return res.status(400).json({ error: 'Invalid face data' });
+app.post('/api/employees', async (req, res) => {
+  try {
+    const { name, code, descriptors } = req.body || {};
+    if (!name || !code || !Array.isArray(descriptors) || descriptors.length === 0)
+      return res.status(400).json({ error: 'Name, code and face data are required' });
+    if (!descriptors.every(isValidDescriptor))
+      return res.status(400).json({ error: 'Invalid face data' });
 
-  const db = load();
-  if (db.employees.some(e => e.code.toLowerCase() === String(code).toLowerCase()))
-    return res.status(409).json({ error: 'Employee code already exists' });
+    const db = await getDb();
+    const cleanCode = String(code).trim();
+    const existing = await db.collection('employees').findOne({
+      code: { $regex: new RegExp(`^${escapeRegex(cleanCode)}$`, 'i') }
+    });
+    if (existing)
+      return res.status(409).json({ error: 'Employee code already exists' });
 
-  const emp = {
-    id: Date.now().toString(),
-    name: String(name).trim(),
-    code: String(code).trim(),
-    descriptors,
-    enrolledAt: Date.now(),
-  };
-  db.employees.push(emp);
-  save(db);
-  res.status(201).json({ ok: true, id: emp.id });
+    const emp = {
+      id: Date.now().toString(),
+      name: String(name).trim(),
+      code: cleanCode,
+      descriptors,
+      enrolledAt: Date.now(),
+    };
+    await db.collection('employees').insertOne(emp);
+    res.status(201).json({ ok: true, id: emp.id });
+  } catch (err) {
+    console.error('Error adding employee to MongoDB:', err);
+    res.status(500).json({ error: 'Failed to save employee to database' });
+  }
 });
 
-app.delete('/api/employees/:id', (req, res) => {
-  const db = load();
-  const before = db.employees.length;
-  db.employees = db.employees.filter(e => e.id !== req.params.id);
-  if (db.employees.length === before) return res.status(404).json({ error: 'Employee not found' });
-  save(db);
-  res.json({ ok: true });
+app.delete('/api/employees/:id', async (req, res) => {
+  try {
+    const db = await getDb();
+    const id = req.params.id;
+    const result = await db.collection('employees').deleteOne({
+      $or: [{ id: id }]
+    });
+    if (result.deletedCount === 0) return res.status(404).json({ error: 'Employee not found' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error deleting employee from MongoDB:', err);
+    res.status(500).json({ error: 'Failed to delete employee' });
+  }
 });
 
 // ---------- Attendance ----------
-app.post('/api/mark', (req, res) => {
-  const { descriptor } = req.body || {};
-  if (!isValidDescriptor(descriptor)) return res.status(400).json({ error: 'Invalid face data' });
+app.post('/api/mark', async (req, res) => {
+  try {
+    const { descriptor } = req.body || {};
+    if (!isValidDescriptor(descriptor)) return res.status(400).json({ error: 'Invalid face data' });
 
-  const db = load();
-  let best = null, bestDist = Infinity;
-  for (const emp of db.employees) {
-    for (const d of emp.descriptors) {
-      const dist = distance(descriptor, d);
-      if (dist < bestDist) { bestDist = dist; best = emp; }
+    const db = await getDb();
+    const employees = await db.collection('employees').find({}).toArray();
+
+    let best = null, bestDist = Infinity;
+    for (const emp of employees) {
+      for (const d of (emp.descriptors || [])) {
+        const dist = distance(descriptor, d);
+        if (dist < bestDist) { bestDist = dist; best = emp; }
+      }
     }
+
+    if (!best || bestDist > CONFIG.matchThreshold)
+      return res.status(404).json({ error: 'Face not recognized' });
+
+    const now = Date.now();
+    const day = todayStr();
+
+    const todays = await db.collection('attendance')
+      .find({ employeeId: best.id, date: day })
+      .sort({ time: 1 })
+      .toArray();
+
+    const last = todays[todays.length - 1];
+
+    if (last && now - last.time < CONFIG.cooldownMs)
+      return res.json({ ok: true, duplicate: true, name: best.name, code: best.code, type: last.type, timeStr: timeStr(last.time) });
+
+    const type = !last || last.type === 'OUT' ? 'IN' : 'OUT';
+    const record = {
+      id: now.toString(36) + Math.random().toString(36).slice(2, 6),
+      employeeId: best.id,
+      name: best.name,
+      code: best.code,
+      type,
+      date: day,
+      time: now,
+    };
+    await db.collection('attendance').insertOne(record);
+    res.json({ ok: true, duplicate: false, name: best.name, code: best.code, type, timeStr: timeStr(now) });
+  } catch (err) {
+    console.error('Error marking attendance in MongoDB:', err);
+    res.status(500).json({ error: 'Failed to record attendance' });
   }
-
-  if (!best || bestDist > CONFIG.matchThreshold)
-    return res.status(404).json({ error: 'Face not recognized' });
-
-  const now = Date.now();
-  const day = todayStr();
-  const todays = db.attendance.filter(a => a.employeeId === best.id && a.date === day);
-  const last = todays[todays.length - 1];
-
-  if (last && now - last.time < CONFIG.cooldownMs)
-    return res.json({ ok: true, duplicate: true, name: best.name, code: best.code, type: last.type, timeStr: timeStr(last.time) });
-
-  const type = !last || last.type === 'OUT' ? 'IN' : 'OUT';
-  const record = {
-    id: now.toString(36) + Math.random().toString(36).slice(2, 6),
-    employeeId: best.id, name: best.name, code: best.code,
-    type, date: day, time: now,
-  };
-  db.attendance.push(record);
-  save(db);
-  res.json({ ok: true, duplicate: false, name: best.name, code: best.code, type, timeStr: timeStr(now) });
 });
 
-app.get('/api/attendance', (req, res) => {
-  const db = load();
-  const date = req.query.date || todayStr();
-  res.json(db.attendance.filter(a => a.date === date));
+app.get('/api/attendance', async (req, res) => {
+  try {
+    const db = await getDb();
+    const date = req.query.date || todayStr();
+    const records = await db.collection('attendance')
+      .find({ date })
+      .sort({ time: 1 })
+      .toArray();
+    res.json(records.map(r => ({
+      id: r.id || r._id.toString(),
+      employeeId: r.employeeId,
+      name: r.name,
+      code: r.code,
+      type: r.type,
+      date: r.date,
+      time: r.time,
+    })));
+  } catch (err) {
+    console.error('Error fetching attendance from MongoDB:', err);
+    res.status(500).json({ error: 'Failed to load attendance records' });
+  }
 });
 
 if (!process.env.VERCEL) {
