@@ -2,84 +2,501 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Check-In Kiosk | Attendance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>AI Biometric Attendance Kiosk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0b1020; --card:#131a2e; --line:#23304f; --text:#e8ecf7; --muted:#8a96b4; --green:#22c55e; --red:#ef4444; --amber:#f59e0b; --blue:#3b82f6; }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-  header { display:flex; justify-content:space-between; align-items:center; padding:18px 28px; border-bottom:1px solid var(--line); }
-  .brand { font-weight:700; letter-spacing:.04em; }
-  .clock { text-align:right; }
-  .clock .time { font-size:22px; font-weight:700; font-variant-numeric: tabular-nums; }
-  .clock .date { font-size:13px; color: var(--muted); }
-  nav a { color: var(--muted); text-decoration:none; margin-left:16px; font-size:14px; }
-  nav a:hover { color: var(--text); }
-  main { display:grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); gap:24px; padding:24px 28px; max-width:1200px; margin:auto; }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
-  .card { background: var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; }
-  .camera { position:relative; border-radius:12px; overflow:hidden; background:#000; aspect-ratio: 4/3; }
-  video { width:100%; height:100%; object-fit:cover; transform: scaleX(-1); display:block; }
-  .frame { position:absolute; inset:12%; border:2px dashed rgba(255,255,255,.35); border-radius:50%; pointer-events:none; }
-  .hint { color: var(--muted); font-size:14px; margin-top:12px; text-align:center; }
-  .result { min-height: 220px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
-  .result .icon { width:76px; height:76px; border-radius:50%; display:grid; place-items:center; font-size:34px; font-weight:700; margin-bottom:14px; }
-  .result.ok-IN .icon { background: rgba(34,197,94,.15); color: var(--green); }
-  .result.ok-OUT .icon { background: rgba(148,163,184,.15); color: #cbd5e1; }
-  .result.err .icon { background: rgba(239,68,68,.15); color: var(--red); }
-  .result.idle .icon { background: rgba(59,130,246,.15); color: var(--blue); }
-  .result h2 { margin:0 0 6px; font-size:26px; }
-  .result p { margin:0; color: var(--muted); font-size:15px; }
-  .status-type { font-size:15px; font-weight:700; letter-spacing:.06em; margin-top:8px; }
-  h3 { margin:0 0 12px; font-size:15px; color: var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
-  .feed { list-style:none; margin:0; padding:0; }
-  .feed li { display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); font-size:14px; }
-  .feed li:last-child { border-bottom:none; }
-  .pill { font-size:12px; font-weight:700; padding:3px 9px; border-radius:999px; }
-  .pill.IN { background: rgba(34,197,94,.15); color: var(--green); }
-  .pill.OUT { background: rgba(148,163,184,.15); color: #cbd5e1; }
-  .muted { color: var(--muted); }
-  .loading { position:absolute; inset:0; display:grid; place-items:center; background: rgba(0,0,0,.6); font-size:15px; }
+  :root {
+    --bg: #070a12;
+    --card: #0f1626;
+    --card-surface: rgba(15, 22, 38, 0.75);
+    --line: rgba(255, 255, 255, 0.08);
+    --line-active: rgba(59, 130, 246, 0.4);
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --primary: #3b82f6;
+    --primary-glow: rgba(59, 130, 246, 0.4);
+    --cyan: #06b6d4;
+    --cyan-glow: rgba(6, 182, 212, 0.4);
+    --green: #10b981;
+    --green-glow: rgba(16, 185, 129, 0.4);
+    --green-soft: rgba(16, 185, 129, 0.14);
+    --amber: #f59e0b;
+    --amber-glow: rgba(245, 158, 11, 0.4);
+    --amber-soft: rgba(245, 158, 11, 0.14);
+    --red: #ef4444;
+    --red-glow: rgba(239, 68, 68, 0.4);
+    --red-soft: rgba(239, 68, 68, 0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 74px; /* Space for mobile bottom nav */
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 45%);
+    background-attachment: fixed;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  header {
+    background: rgba(15, 22, 38, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .brand-group { display: flex; align-items: center; gap: 12px; }
+  .brand-icon {
+    width: 38px; height: 38px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    display: grid; place-items: center;
+    font-size: 19px;
+    box-shadow: 0 0 20px var(--cyan-glow);
+  }
+  .brand-text h1 { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+  .brand-online {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; color: var(--green);
+  }
+  .online-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: blink 2s infinite ease-in-out;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .clock-widget { text-align: right; }
+  .clock-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px; font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+  .clock-date { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+
+  /* Desktop Nav */
+  nav.top-nav {
+    padding: 8px 24px;
+    background: rgba(7, 10, 18, 0.7);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  nav.top-nav .links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    margin-right: 18px;
+    transition: color 0.15s ease;
+  }
+  nav.top-nav .links a:hover { color: #fff; }
+  nav.top-nav .links a.active { color: var(--cyan); font-weight: 700; }
+  nav.top-nav .admin-link {
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--line);
+    padding: 5px 12px;
+    border-radius: 8px;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+  }
+  @media (max-width: 900px) {
+    nav.top-nav { display: none; }
+  }
+
+  /* Main Layout */
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 20px;
+    padding: 20px 24px;
+    max-width: 1240px;
+    margin: auto;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
+  }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.6);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Camera Container */
+  .camera-viewport {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 4/3;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.85);
+  }
+  video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    display: block;
+  }
+
+  /* Laser Scanline Animation */
+  .scanline {
+    position: absolute;
+    left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #06b6d4, #3b82f6, transparent);
+    box-shadow: 0 0 15px #06b6d4, 0 0 30px #3b82f6;
+    animation: scanMotion 2.4s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 5;
+  }
+  @keyframes scanMotion {
+    0% { top: 12%; opacity: 0.2; }
+    50% { opacity: 0.95; }
+    100% { top: 88%; opacity: 0.2; }
+  }
+
+  /* Biometric Hologram Oval Frame */
+  .bio-frame {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px; height: 260px;
+    border-radius: 50%;
+    border: 2px dashed rgba(6, 182, 212, 0.45);
+    box-shadow: 0 0 0 9999px rgba(7, 10, 18, 0.4), 0 0 20px rgba(6, 182, 212, 0.2);
+    pointer-events: none;
+    z-index: 4;
+    transition: all 0.3s ease;
+  }
+  .bio-frame.matched-IN {
+    border: 3px solid #10b981;
+    box-shadow: 0 0 35px var(--green-glow), 0 0 0 9999px rgba(7, 10, 18, 0.45);
+  }
+  .bio-frame.matched-OUT {
+    border: 3px solid #06b6d4;
+    box-shadow: 0 0 35px var(--cyan-glow), 0 0 0 9999px rgba(7, 10, 18, 0.45);
+  }
+  .bio-frame.completed {
+    border: 3px solid #f59e0b;
+    box-shadow: 0 0 35px var(--amber-glow), 0 0 0 9999px rgba(7, 10, 18, 0.45);
+  }
+
+  .bio-frame .corner {
+    position: absolute;
+    width: 18px; height: 18px;
+    border: 3px solid #06b6d4;
+  }
+  .corner.tl { top: 12px; left: 16px; border-right: none; border-bottom: none; border-radius: 4px 0 0 0; }
+  .corner.tr { top: 12px; right: 16px; border-left: none; border-bottom: none; border-radius: 0 4px 0 0; }
+  .corner.bl { bottom: 12px; left: 16px; border-right: none; border-top: none; border-radius: 0 0 0 4px; }
+  .corner.br { bottom: 12px; right: 16px; border-left: none; border-top: none; border-radius: 0 0 4px 0; }
+
+  .cam-overlay-badge {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 22, 38, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    z-index: 6;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .cam-instruction {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Result Screen */
+  .result-card {
+    min-height: 240px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 24px 20px;
+    transition: all 0.3s ease;
+  }
+  .result-avatar {
+    width: 72px; height: 72px;
+    border-radius: 20px;
+    display: grid; place-items: center;
+    font-size: 32px;
+    margin-bottom: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 25px rgba(0,0,0,0.5);
+  }
+  .result-card.idle .result-avatar {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--primary);
+    border: 1px solid var(--primary-glow);
+  }
+  .result-card.ok-IN .result-avatar {
+    background: var(--green-soft);
+    color: var(--green);
+    border: 2px solid var(--green);
+    box-shadow: 0 0 30px var(--green-glow);
+  }
+  .result-card.ok-OUT .result-avatar {
+    background: rgba(6, 182, 212, 0.15);
+    color: var(--cyan);
+    border: 2px solid var(--cyan);
+    box-shadow: 0 0 30px var(--cyan-glow);
+  }
+  .result-card.completed .result-avatar {
+    background: var(--amber-soft);
+    color: var(--amber);
+    border: 2px solid var(--amber);
+    box-shadow: 0 0 30px var(--amber-glow);
+  }
+  .result-card.err .result-avatar {
+    background: var(--red-soft);
+    color: var(--red);
+    border: 2px solid var(--red);
+    box-shadow: 0 0 30px var(--red-glow);
+  }
+
+  .result-name { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .result-code { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 12px; }
+  .result-msg { font-size: 14px; color: var(--muted); font-weight: 500; max-width: 320px; line-height: 1.5; }
+
+  /* Punch Badge Pill */
+  .punch-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    margin-top: 10px;
+  }
+  .punch-pill.IN-ontime { background: var(--green-soft); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.4); }
+  .punch-pill.IN-late { background: var(--amber-soft); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.4); }
+  .punch-pill.IN-absent { background: var(--red-soft); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.4); }
+  .punch-pill.OUT { background: rgba(6, 182, 212, 0.15); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.4); }
+  .punch-pill.COMPLETED { background: var(--amber-soft); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.4); }
+
+  /* Daily Punch Progress Tracker (1/2 or 2/2) */
+  .punch-stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--line);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .step-box { display: flex; align-items: center; gap: 5px; color: var(--muted); }
+  .step-box.active { color: #fff; }
+  .step-box.done { color: var(--green); }
+  .step-arrow { color: var(--line); }
+
+  /* Feed Card */
+  .feed-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .feed-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  .feed-list { list-style: none; display: grid; gap: 8px; }
+  .feed-item {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.15s ease;
+  }
+  .feed-user { display: flex; align-items: center; gap: 10px; }
+  .feed-avatar {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 800; font-size: 12px;
+    display: grid; place-items: center;
+  }
+  .feed-name { font-weight: 700; font-size: 13px; }
+  .feed-code { font-size: 11px; color: var(--muted); }
+  .feed-right { display: flex; align-items: center; gap: 8px; }
+  .feed-time { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  .feed-tag {
+    padding: 2px 7px; border-radius: 6px;
+    font-size: 10px; font-weight: 800;
+  }
+  .feed-tag.IN { background: var(--green-soft); color: var(--green); }
+  .feed-tag.OUT { background: rgba(6, 182, 212, 0.15); color: var(--cyan); }
+  .feed-tag.LATE { background: var(--amber-soft); color: var(--amber); }
+
+  /* Mobile Bottom App Navigation */
+  .mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 64px;
+    background: rgba(15, 22, 38, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+  }
+  .mobile-bottom-nav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 11px; font-weight: 700;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    flex: 1; padding: 6px 0;
+  }
+  .mobile-bottom-nav a.active { color: var(--cyan); }
+  .mobile-bottom-nav a .nav-icon { font-size: 18px; }
+  @media (max-width: 900px) {
+    .mobile-bottom-nav { display: flex; }
+  }
+
+  .loading-overlay {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    background: rgba(7, 10, 18, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 20;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--cyan);
+  }
 </style>
 </head>
 <body>
+
 <header>
-  <div class="brand">ATTENDANCE · KIOSK</div>
-  <div class="clock"><div class="time" id="clock"></div><div class="date" id="date"></div></div>
-</header>
-<nav style="padding:10px 28px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-  <div>
-    <a href="/" style="font-weight:600;color:var(--text)">Kiosk</a>
-    <a href="/dashboard.html">Dashboard 🔒</a>
-    <a href="/admin.html">Employees 🔒</a>
+  <div class="brand-group">
+    <div class="brand-icon">⚡</div>
+    <div class="brand-text">
+      <h1>ATTENDANCE PRO</h1>
+      <div class="brand-online"><span class="online-dot"></span> Kiosk Online</div>
+    </div>
   </div>
-  <a href="/login.html" style="font-size:12px;background:#1e293b;padding:5px 12px;border-radius:6px;border:1px solid var(--line)">Admin Login</a>
+  <div class="clock-widget">
+    <div class="clock-time" id="clock">--:--:--</div>
+    <div class="clock-date" id="date">Loading date...</div>
+  </div>
+</header>
+
+<nav class="top-nav">
+  <div class="links">
+    <a class="active" href="/">🎯 Kiosk (Public)</a>
+    <a href="/dashboard.html">📊 Dashboard 🔒</a>
+    <a href="/admin.html">👥 Employees 🔒</a>
+  </div>
+  <a class="admin-link" href="/login.html">🔒 Admin Login</a>
 </nav>
 
 <main>
+  <!-- Camera Viewport Card -->
   <div class="card">
-    <div class="camera">
+    <div class="camera-viewport">
       <video id="video" autoplay muted playsinline></video>
-      <div class="frame"></div>
-      <div class="loading" id="loading">Loading face models...</div>
+      <div class="scanline" id="scanline"></div>
+
+      <!-- Holographic Biometric Oval Frame -->
+      <div class="bio-frame" id="bioFrame">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+      </div>
+
+      <div class="cam-overlay-badge" id="camBadge">
+        <span>👤</span> <span>Look at Camera</span>
+      </div>
+
+      <div class="loading-overlay" id="loading">⚡ Loading AI Face Recognition Models...</div>
     </div>
-    <div class="hint">Look straight at the camera. Check-in and check-out are automatic.</div>
+
+    <div class="cam-instruction">
+      <span>💡</span> Auto check-in (Punch 1) and check-out (Punch 2). Max 2 punches per day.
+    </div>
   </div>
 
+  <!-- Result & Live Feed Section -->
   <div>
-    <div class="card result idle" id="result">
-      <div class="icon" id="icon">●</div>
-      <h2 id="title">Please wait</h2>
-      <p id="sub">Starting camera...</p>
-      <div class="status-type" id="ptype"></div>
+    <!-- Interactive Result Card -->
+    <div class="card result-card idle" id="resultCard">
+      <div class="result-avatar" id="resultAvatar">●</div>
+      <div class="result-name" id="resultTitle">Ready to Scan</div>
+      <div class="result-code" id="resultCode">Look directly into the camera frame</div>
+      <div class="result-msg" id="resultSub">Automatic biometric detection active.</div>
+      <div id="punchBadgeSlot"></div>
+      <div id="punchProgressSlot"></div>
     </div>
 
-    <div class="card" style="margin-top:18px">
-      <h3>Today's latest activity</h3>
-      <ul class="feed" id="feed"><li class="muted">No activity yet</li></ul>
+    <!-- Today's Activity Feed -->
+    <div class="card" style="margin-top: 18px;">
+      <div class="feed-header">
+        <span class="feed-title">⚡ Today's Live Activity</span>
+        <span style="font-size: 11px; color: var(--muted); font-weight: 700;" id="feedCount"></span>
+      </div>
+      <ul class="feed-list" id="feedList">
+        <li style="text-align:center;padding:24px;color:var(--muted);font-size:13px">No punches recorded today yet</li>
+      </ul>
     </div>
   </div>
 </main>
+
+<!-- Mobile Bottom App Bar -->
+<div class="mobile-bottom-nav">
+  <a class="active" href="/"><span class="nav-icon">🎯</span><span>Kiosk</span></a>
+  <a href="/dashboard.html"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+  <a href="/admin.html"><span class="nav-icon">👥</span><span>Employees</span></a>
+  <a href="/login.html"><span class="nav-icon">🔒</span><span>Login</span></a>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
@@ -90,17 +507,39 @@ let busy = false, ready = false;
 function tickClock() {
   const n = new Date();
   $('clock').textContent = n.toLocaleTimeString('en-GB');
-  $('date').textContent = n.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  $('date').textContent = n.toLocaleDateString('en-US', {
+    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+  });
 }
-setInterval(tickClock, 1000); tickClock();
+setInterval(tickClock, 1000);
+tickClock();
 
-function setResult(state, title, sub, type = '') {
-  const el = $('result');
-  el.className = 'card result ' + state + (type ? ' ok-' + type : '');
-  $('icon').textContent = state === 'err' ? '✕' : state === 'idle' ? '●' : (type === 'IN' ? '↓' : '↑');
-  $('title').textContent = title;
-  $('sub').textContent = sub;
-  $('ptype').textContent = type ? (type === 'IN' ? 'CHECKED IN' : 'CHECKED OUT') : '';
+function showResult(state, title, code, sub, badgeHtml = '', stepperHtml = '') {
+  const card = $('resultCard');
+  card.className = 'card result-card ' + state;
+  $('resultTitle').textContent = title;
+  $('resultCode').textContent = code;
+  $('resultSub').textContent = sub;
+  $('punchBadgeSlot').innerHTML = badgeHtml;
+  $('punchProgressSlot').innerHTML = stepperHtml;
+
+  const frame = $('bioFrame');
+  if (state.startsWith('ok-IN')) {
+    frame.className = 'bio-frame matched-IN';
+    $('resultAvatar').textContent = '↓';
+  } else if (state.startsWith('ok-OUT')) {
+    frame.className = 'bio-frame matched-OUT';
+    $('resultAvatar').textContent = '↑';
+  } else if (state === 'completed') {
+    frame.className = 'bio-frame completed';
+    $('resultAvatar').textContent = '★';
+  } else if (state === 'err') {
+    frame.className = 'bio-frame';
+    $('resultAvatar').textContent = '✕';
+  } else {
+    frame.className = 'bio-frame';
+    $('resultAvatar').textContent = '●';
+  }
 }
 
 async function loadFeed() {
@@ -109,11 +548,38 @@ async function loadFeed() {
     const r = await fetch('/api/attendance?date=' + today);
     if (!r.ok) return;
     const recs = await r.json();
-    const last = recs.slice().sort((a, b) => b.time - a.time).slice(0, 6);
-    $('feed').innerHTML = last.length
-      ? last.map(r => `<li><span>${r.name} <span class="muted">(${r.code})</span></span>
-          <span><span class="pill ${r.type}">${r.type}</span> <span class="muted">${new Date(r.time).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'})}</span></span></li>`).join('')
-      : '<li class="muted">No activity yet</li>';
+    const sorted = recs.slice().sort((a, b) => b.time - a.time).slice(0, 7);
+
+    $('feedCount').textContent = `${recs.length} total`;
+
+    if (!sorted.length) {
+      $('feedList').innerHTML = `<li style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No activity recorded today yet</li>`;
+      return;
+    }
+
+    $('feedList').innerHTML = sorted.map(r => {
+      const initials = r.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+      const timeFmt = new Date(r.time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      const statusBadge = r.type === 'IN' && r.arrivalStatus === 'LATE'
+        ? `<span class="feed-tag LATE">LATE</span>`
+        : `<span class="feed-tag ${r.type}">${r.type}</span>`;
+
+      return `
+        <li class="feed-item">
+          <div class="feed-user">
+            <div class="feed-avatar">${initials}</div>
+            <div>
+              <div class="feed-name">${r.name}</div>
+              <div class="feed-code">${r.code} · ${r.statusNote || (r.type === 'IN' ? 'Checked in' : 'Checked out')}</div>
+            </div>
+          </div>
+          <div class="feed-right">
+            ${statusBadge}
+            <span class="feed-time">${timeFmt}</span>
+          </div>
+        </li>
+      `;
+    }).join('');
   } catch (e) {
     console.error('Failed to load feed:', e);
   }
@@ -124,15 +590,17 @@ async function init() {
     await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
     await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
     await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
-    video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    video.srcObject = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+    });
     $('loading').style.display = 'none';
     ready = true;
-    setResult('idle', 'Ready', 'Please look at the camera');
+    showResult('idle', 'Ready to Scan', 'Look into the frame', 'Position your face inside the circle.');
     loadFeed();
     setInterval(scan, 800);
   } catch (e) {
-    $('loading').textContent = 'Error: ' + e.message;
-    setResult('err', 'Camera or models unavailable', e.message);
+    $('loading').textContent = 'Camera error: ' + e.message;
+    showResult('err', 'Camera Unavailable', 'Hardware error', e.message);
   }
 }
 
@@ -143,27 +611,83 @@ async function scan() {
   if (!det) return;
 
   busy = true;
+  $('camBadge').innerHTML = '<span>⚡</span> <span>Verifying Face...</span>';
+
   try {
+    const today = new Date().toLocaleDateString('en-CA');
     const r = await fetch('/api/mark', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ descriptor: Array.from(det.descriptor) })
+      body: JSON.stringify({
+        descriptor: Array.from(det.descriptor),
+        date: today
+      })
     });
+
     const data = await r.json();
+
     if (r.ok) {
       if (data.duplicate) {
-        setResult('ok', data.name, `Already recorded at ${data.timeStr}. Please wait before punching again.`, data.type);
-      } else {
-        setResult('ok', data.name, `Recorded at ${data.timeStr}`, data.type);
+        showResult('ok-' + data.type, data.name, `Code: ${data.code}`, data.message || `Already recorded ${data.type} at ${data.timeStr}`);
+      } else if (data.type === 'IN') {
+        // First punch of the day: Check-In
+        let pillClass = 'punch-pill IN-ontime';
+        let pillText = `CHECKED IN · ON TIME (${data.timeStr})`;
+
+        if (data.arrivalStatus === 'LATE') {
+          pillClass = 'punch-pill IN-late';
+          pillText = `CHECKED IN · ${data.statusNote.toUpperCase()} (${data.timeStr})`;
+        } else if (data.arrivalStatus === 'ABSENT') {
+          pillClass = 'punch-pill IN-absent';
+          pillText = `CHECKED IN · ABSENT (${data.timeStr})`;
+        }
+
+        const badgeHtml = `<div class="${pillClass}">${pillText}</div>`;
+        const stepperHtml = `
+          <div class="punch-stepper">
+            <span class="step-box done">✓ 1. IN (${data.timeStr})</span>
+            <span class="step-arrow">→</span>
+            <span class="step-box active">2. OUT Pending</span>
+          </div>
+        `;
+        showResult('ok-IN', data.name, `Code: ${data.code}`, 'First punch recorded! Have a productive shift.', badgeHtml, stepperHtml);
+        loadFeed();
+      } else if (data.type === 'OUT') {
+        // Second punch of the day: Check-Out (Completed)
+        const badgeHtml = `<div class="punch-pill OUT">CHECKED OUT · ${data.statusNote.toUpperCase()} (${data.timeStr})</div>`;
+        const stepperHtml = `
+          <div class="punch-stepper">
+            <span class="step-box done">✓ 1. IN</span>
+            <span class="step-arrow">→</span>
+            <span class="step-box done">✓ 2. OUT (${data.timeStr})</span>
+            <span style="color:var(--green);margin-left:4px">★ Day Completed</span>
+          </div>
+        `;
+        showResult('ok-OUT', data.name, `Code: ${data.code}`, "Shift completed! Today's 2 punches are now finished.", badgeHtml, stepperHtml);
         loadFeed();
       }
     } else {
-      setResult('err', 'Not recognized', data.error || 'Please try again');
+      if (data.completed) {
+        // Daily limit reached: Already punched both IN and OUT today!
+        const badgeHtml = `<div class="punch-pill COMPLETED">★ TODAY'S ATTENDANCE COMPLETED (2/2)</div>`;
+        const stepperHtml = `
+          <div class="punch-stepper">
+            <span class="step-box done">✓ IN: ${data.inTime || 'Done'}</span>
+            <span class="step-arrow">→</span>
+            <span class="step-box done">✓ OUT: ${data.outTime || 'Done'}</span>
+          </div>
+        `;
+        showResult('completed', data.name, `Code: ${data.code}`, data.message, badgeHtml, stepperHtml);
+      } else {
+        showResult('err', 'Not Recognized', 'Face mismatch', data.error || 'Please look straight into the camera.');
+      }
     }
   } catch (e) {
-    setResult('err', 'Connection error', 'Cannot reach the server');
+    showResult('err', 'Connection Error', 'Offline', 'Cannot reach backend server.');
   }
-  setTimeout(() => { busy = false; }, 2500);
+
+  $('camBadge').innerHTML = '<span>👤</span> <span>Look at Camera</span>';
+  setTimeout(() => { busy = false; }, 3000);
 }
 
 init();

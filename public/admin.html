@@ -2,36 +2,229 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Employees | Attendance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Employee Management | Attendance Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#f4f6fa; --card:#fff; --line:#e5e8ef; --text:#1d2433; --muted:#6b7385; --primary:#2563eb; --primary-soft:#e8efff; --red:#dc2626; --red-soft:#fee2e2; --green:#16a34a; --green-soft:#dcfce7; }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); font-size:14px; }
-  header { background: var(--card); border-bottom:1px solid var(--line); padding:14px 28px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
-  header .brand { font-weight:700; font-size:16px; }
-  nav a { color: var(--muted); text-decoration:none; margin-left:16px; font-weight:500; }
-  nav a.active, nav a:hover { color: var(--primary); }
-  main { max-width:1100px; margin:26px auto; padding:0 20px; display:grid; gap:20px; }
-  .grid { display:grid; grid-template-columns: 1fr 1.3fr; gap:20px; }
-  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
-  .card { background: var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; }
-  .card h2 { margin:0 0 14px; font-size:16px; }
-  label { display:block; font-size:13px; font-weight:600; color: var(--muted); margin: 10px 0 6px; }
-  input { width:100%; font:inherit; padding:10px 12px; border:1px solid var(--line); border-radius:8px; }
-  input:focus { outline:2px solid var(--primary-soft); border-color: var(--primary); }
-  
+  :root {
+    --bg: #090d16;
+    --card: #111827;
+    --card-hover: #172033;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-active: rgba(59, 130, 246, 0.4);
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --primary: #3b82f6;
+    --primary-glow: rgba(59, 130, 246, 0.35);
+    --primary-soft: rgba(59, 130, 246, 0.12);
+    --green: #10b981;
+    --green-glow: rgba(16, 185, 129, 0.3);
+    --green-soft: rgba(16, 185, 129, 0.12);
+    --amber: #f59e0b;
+    --amber-soft: rgba(245, 158, 11, 0.12);
+    --red: #ef4444;
+    --red-soft: rgba(239, 68, 68, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    min-height: 100vh;
+    padding-bottom: 80px; /* Space for mobile nav */
+    background-image: 
+      radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+    background-attachment: fixed;
+  }
+
+  /* Header */
+  header {
+    background: rgba(17, 24, 39, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .brand-group { display: flex; align-items: center; gap: 12px; }
+  .brand-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    display: grid; place-items: center;
+    font-size: 18px;
+    box-shadow: 0 0 15px var(--primary-glow);
+  }
+  .brand-title { font-weight: 800; font-size: 16px; letter-spacing: -0.02em; }
+  .brand-badge {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    background: var(--primary-soft);
+    color: var(--primary);
+    padding: 2px 8px; border-radius: 999px;
+    border: 1px solid var(--line-active);
+    margin-left: 6px;
+  }
+
+  nav.desktop-nav { display: flex; align-items: center; gap: 8px; }
+  nav.desktop-nav a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.15s ease;
+  }
+  nav.desktop-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+  nav.desktop-nav a.active { color: #fff; background: var(--primary-soft); border: 1px solid var(--line-active); }
+  .logout-btn {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .logout-btn:hover { background: var(--red); color: #fff; }
+
+  /* Main Container */
+  main {
+    max-width: 1240px;
+    margin: 24px auto;
+    padding: 0 16px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 480px) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 960px) {
+    .grid { grid-template-columns: 1fr; }
+    nav.desktop-nav { display: none; }
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .card-title {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Form Elements */
+  .form-row { margin-bottom: 14px; }
+  .form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  input {
+    width: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 11px 14px;
+    background: #090d16;
+    color: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    outline: none;
+    transition: all 0.15s ease;
+  }
+  input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+  }
+
+  /* Dynamic Policy Preview Box */
+  .policy-box {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.06));
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 14px 0 18px;
+    font-size: 12px;
+  }
+  .policy-box-title {
+    font-weight: 800;
+    color: #93c5fd;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .policy-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .chip {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .chip.ontime { background: var(--green-soft); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
+  .chip.late { background: var(--amber-soft); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+  .chip.absent { background: var(--red-soft); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
+  .chip.limit { background: var(--primary-soft); color: var(--primary); border: 1px solid var(--line-active); }
+
   /* Biometric Camera Viewport */
   .camera-box {
     position: relative;
     width: 100%;
     aspect-ratio: 4/3;
-    background: #0b1120;
+    background: #000;
     border-radius: 14px;
     overflow: hidden;
-    margin-top: 14px;
+    margin: 12px 0 16px;
     border: 1px solid var(--line);
-    box-shadow: inset 0 0 50px rgba(0,0,0,0.85);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.9);
   }
   .camera-box video {
     width: 100%;
@@ -39,7 +232,6 @@
     object-fit: cover;
     transform: scaleX(-1);
     display: block;
-    margin: 0;
   }
   
   /* Biometric Oval Ring */
@@ -48,27 +240,27 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 200px;
-    height: 250px;
+    width: 190px;
+    height: 240px;
     border-radius: 50%;
     border: 2px dashed rgba(255, 255, 255, 0.4);
-    box-shadow: 0 0 0 9999px rgba(11, 17, 32, 0.45);
+    box-shadow: 0 0 0 9999px rgba(9, 13, 22, 0.5);
     pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
     z-index: 2;
   }
   .face-ring.detected {
-    border: 3px solid #22c55e;
-    box-shadow: 0 0 25px rgba(34, 197, 94, 0.5), 0 0 0 9999px rgba(11, 17, 32, 0.4);
+    border: 3px solid #10b981;
+    box-shadow: 0 0 25px var(--green-glow), 0 0 0 9999px rgba(9, 13, 22, 0.45);
   }
   .face-ring.capturing {
     border: 3px solid #3b82f6;
-    box-shadow: 0 0 30px rgba(59, 130, 246, 0.65), 0 0 0 9999px rgba(11, 17, 32, 0.45);
-    animation: ringPulse 1s infinite alternate;
+    box-shadow: 0 0 35px var(--primary-glow), 0 0 0 9999px rgba(9, 13, 22, 0.5);
+    animation: ringPulse 0.9s infinite alternate;
   }
   @keyframes ringPulse {
     0% { transform: translate(-50%, -50%) scale(1); }
-    100% { transform: translate(-50%, -50%) scale(1.03); }
+    100% { transform: translate(-50%, -50%) scale(1.04); }
   }
   .face-ring .corner {
     position: absolute;
@@ -76,57 +268,55 @@
     height: 16px;
     border: 3px solid #fff;
   }
-  .face-ring.detected .corner { border-color: #22c55e; }
+  .face-ring.detected .corner { border-color: #10b981; }
   .face-ring.capturing .corner { border-color: #3b82f6; }
-  .corner.tl { top: 12px; left: 16px; border-right: none; border-bottom: none; border-radius: 4px 0 0 0; }
-  .corner.tr { top: 12px; right: 16px; border-left: none; border-bottom: none; border-radius: 0 4px 0 0; }
-  .corner.bl { bottom: 12px; left: 16px; border-right: none; border-top: none; border-radius: 0 0 0 4px; }
-  .corner.br { bottom: 12px; right: 16px; border-left: none; border-top: none; border-radius: 0 0 4px 0; }
+  .corner.tl { top: 10px; left: 14px; border-right: none; border-bottom: none; border-radius: 4px 0 0 0; }
+  .corner.tr { top: 10px; right: 14px; border-left: none; border-bottom: none; border-radius: 0 4px 0 0; }
+  .corner.bl { bottom: 10px; left: 14px; border-right: none; border-top: none; border-radius: 0 0 0 4px; }
+  .corner.br { bottom: 10px; right: 14px; border-left: none; border-top: none; border-radius: 0 0 4px 0; }
 
   /* Direction Indicator Banner */
   .dir-badge {
     position: absolute;
-    top: 14px;
+    top: 12px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(15, 23, 42, 0.9);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(17, 24, 39, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 999px;
     padding: 6px 16px;
     display: flex;
     align-items: center;
     gap: 8px;
     color: #fff;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 13px;
     z-index: 3;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
     white-space: nowrap;
-    transition: all 0.25s ease;
   }
-  .dir-badge .dir-icon { font-size: 16px; }
 
   /* Directional Arrows Left & Right */
   .arrow-indicator {
     position: absolute;
     top: 50%;
-    background: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
     color: #fff;
-    font-weight: 700;
+    font-weight: 800;
     font-size: 12px;
     padding: 8px 14px;
-    border-radius: 8px;
+    border-radius: 10px;
     display: none;
     z-index: 4;
-    box-shadow: 0 4px 16px rgba(37,99,235,0.7);
+    box-shadow: 0 0 20px var(--primary-glow);
   }
   .arrow-indicator.left {
-    left: 12px;
+    left: 10px;
     animation: pulseLeft 0.7s infinite alternate;
   }
   .arrow-indicator.right {
-    right: 12px;
+    right: 10px;
     animation: pulseRight 0.7s infinite alternate;
   }
   @keyframes pulseLeft {
@@ -141,7 +331,7 @@
   /* Step Tracker */
   .step-tracker {
     position: absolute;
-    bottom: 30px;
+    bottom: 28px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -149,37 +339,34 @@
     z-index: 3;
   }
   .step-dot {
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(4px);
+    background: rgba(17, 24, 39, 0.9);
+    backdrop-filter: blur(6px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: #cbd5e1;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     padding: 4px 10px;
     border-radius: 999px;
     display: flex;
     align-items: center;
     gap: 5px;
-    transition: all 0.2s ease;
   }
   .step-dot span {
-    width: 15px;
-    height: 15px;
+    width: 14px; height: 14px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.25);
-    display: grid;
-    place-items: center;
-    font-size: 10px;
+    background: rgba(255,255,255,0.2);
+    display: grid; place-items: center;
+    font-size: 9px;
   }
   .step-dot.active {
-    background: #2563eb;
-    border-color: #3b82f6;
+    background: var(--primary);
+    border-color: #60a5fa;
     color: #fff;
-    box-shadow: 0 0 12px rgba(37,99,235,0.6);
+    box-shadow: 0 0 12px var(--primary-glow);
   }
   .step-dot.done {
-    background: #16a34a;
-    border-color: #22c55e;
+    background: var(--green);
+    border-color: #34d399;
     color: #fff;
   }
 
@@ -189,73 +376,239 @@
     left: 50%;
     transform: translateX(-50%);
     font-size: 11px;
-    color: rgba(255,255,255,0.75);
-    text-align: center;
+    color: rgba(255,255,255,0.8);
     white-space: nowrap;
     z-index: 3;
-    font-weight: 500;
+    font-weight: 600;
   }
 
-  button { font:inherit; font-weight:600; border:1px solid var(--line); background: var(--card); padding:10px 14px; border-radius:8px; cursor:pointer; }
-  button.primary { background: var(--primary); color:#fff; border-color: var(--primary); width:100%; margin-top:14px; }
-  button.primary:disabled { opacity:.6; cursor:wait; }
-  button.danger { color: var(--red); border-color: #fecaca; padding:6px 10px; font-size:13px; }
-  button.danger:hover { background: var(--red-soft); }
-  .msg { margin-top:12px; font-size:14px; min-height:20px; }
-  .msg.ok { color: var(--green); } .msg.err { color: var(--red); }
-  .toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
-  .toolbar input { width:220px; }
-  table { width:100%; border-collapse:collapse; }
-  th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color: var(--muted); padding:10px 8px; border-bottom:1px solid var(--line); }
-  td { padding:12px 8px; border-bottom:1px solid var(--line); }
-  tr:last-child td { border-bottom:none; }
-  .code { display:inline-block; background: var(--primary-soft); color: var(--primary); font-weight:600; padding:2px 8px; border-radius:6px; font-size:12px; }
-  .muted { color: var(--muted); }
-  .empty { text-align:center; color: var(--muted); padding:30px; }
-  .tip { background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:10px 12px; border-radius:8px; font-size:13px; margin-top:12px; }
+  /* Primary Button */
+  button.primary {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px var(--primary-glow);
+    transition: all 0.2s ease;
+  }
+  button.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+  }
+  button.primary:disabled { opacity: 0.5; cursor: wait; transform: none; }
+
+  .msg {
+    margin-top: 14px;
+    font-size: 13px;
+    min-height: 22px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: none;
+  }
+  .msg.show { display: block; }
+  .msg.ok { background: var(--green-soft); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .msg.err { background: var(--red-soft); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+  /* Employee Table / Cards */
+  .search-wrap {
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .emp-list {
+    display: grid;
+    gap: 12px;
+    max-height: 680px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .emp-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.15s ease;
+  }
+  .emp-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--line-active);
+  }
+  .emp-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .emp-avatar {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(16, 185, 129, 0.2));
+    border: 1px solid var(--line-active);
+    color: #fff;
+    font-weight: 800;
+    font-size: 14px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .emp-details { min-width: 0; }
+  .emp-name { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .emp-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .code-badge {
+    background: var(--primary-soft);
+    color: #60a5fa;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 5px;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
+  .shift-badge {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 5px;
+  }
+  .del-btn {
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+  .del-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+  /* Mobile Bottom App Navigation */
+  .mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+  }
+  .mobile-bottom-nav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+    padding: 6px 0;
+  }
+  .mobile-bottom-nav a.active { color: var(--primary); }
+  .mobile-bottom-nav a .nav-icon { font-size: 18px; }
+  @media (max-width: 960px) {
+    .mobile-bottom-nav { display: flex; }
+  }
 </style>
 </head>
 <body>
+
 <header>
-  <div class="brand">Attendance · Employee Management</div>
-  <nav style="display:flex;align-items:center;flex-wrap:wrap">
-    <a href="/dashboard.html">Dashboard</a>
-    <a class="active" href="/admin.html">Employees</a>
-    <a href="/">Kiosk</a>
-    <span style="color:var(--muted);font-size:12px;margin-left:16px">Admin: <strong id="adminUserLabel" style="color:var(--text)"></strong></span>
-    <button onclick="logout()" style="margin-left:12px;padding:5px 10px;font-size:12px;background:#ef4444;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">Logout</button>
+  <div class="brand-group">
+    <div class="brand-icon">⚡</div>
+    <div>
+      <span class="brand-title">ATTENDANCE PRO</span>
+      <span class="brand-badge">Admin</span>
+    </div>
+  </div>
+  <nav class="desktop-nav">
+    <a href="/dashboard.html">📊 Dashboard</a>
+    <a class="active" href="/admin.html">👥 Employees</a>
+    <a href="/">🎯 Kiosk</a>
+    <span style="color:var(--muted);font-size:12px;margin: 0 8px;">Admin: <strong id="adminUserLabel" style="color:#fff"></strong></span>
+    <button class="logout-btn" onclick="logout()">Logout</button>
   </nav>
 </header>
 
 <main>
   <div class="grid">
+    <!-- Enrollment Card -->
     <div class="card">
-      <h2>Enroll New Employee</h2>
-      <label for="name">Full name</label>
-      <input id="name" placeholder="e.g. Ali Raza">
-      <label for="code">Employee code</label>
-      <input id="code" placeholder="e.g. E001">
-      <!-- Biometric Camera Box with Interactive Directional Oval -->
+      <div class="card-header">
+        <h2 class="card-title"><span>➕</span> Enroll New Employee</h2>
+      </div>
+
+      <div class="form-row-2">
+        <div>
+          <label for="name">Full Name</label>
+          <input id="name" placeholder="e.g. Ali Raza" autocomplete="off">
+        </div>
+        <div>
+          <label for="code">Employee Code</label>
+          <input id="code" placeholder="e.g. E001" autocomplete="off">
+        </div>
+      </div>
+
+      <!-- Shift Timings & Policy Thresholds -->
+      <div class="form-row-2">
+        <div>
+          <label for="shiftStart">Duty Start Time</label>
+          <input type="time" id="shiftStart" value="09:30">
+        </div>
+        <div>
+          <label for="shiftEnd">Duty End Time</label>
+          <input type="time" id="shiftEnd" value="18:00">
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div>
+          <label for="lateGraceMinutes">Late After (Minutes)</label>
+          <input type="number" id="lateGraceMinutes" value="15" min="0" max="180" placeholder="15">
+        </div>
+        <div>
+          <label for="absentGraceHours">Absent After (Hours)</label>
+          <input type="number" id="absentGraceHours" value="2" min="0.5" max="12" step="0.5" placeholder="2">
+        </div>
+      </div>
+
+      <!-- Live Policy Preview -->
+      <div class="policy-box">
+        <div class="policy-box-title">⚡ Timing & Late Rule Preview:</div>
+        <div class="policy-chips" id="policyPreviewChips">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- Biometric Camera Box -->
       <div class="camera-box">
         <video id="video" autoplay muted playsinline></video>
 
-        <!-- Face Guide Oval Ring -->
         <div class="face-ring" id="faceRing">
           <div class="corner tl"></div><div class="corner tr"></div>
           <div class="corner bl"></div><div class="corner br"></div>
         </div>
 
-        <!-- Directional Overlay Badge -->
         <div class="dir-badge" id="dirBadge">
           <span class="dir-icon" id="dirIcon">👤</span>
           <span class="dir-text" id="dirText">Align face inside the oval</span>
         </div>
 
-        <!-- Directional Arrow Indicators -->
         <div class="arrow-indicator left" id="arrowLeft">⬅️ Turn Head Left</div>
         <div class="arrow-indicator right" id="arrowRight">Turn Head Right ➡️</div>
 
-        <!-- Step Tracker -->
         <div class="step-tracker" id="stepTracker">
           <div class="step-dot" id="dot1"><span>1</span> Straight</div>
           <div class="step-dot" id="dot2"><span>2</span> Right</div>
@@ -265,23 +618,35 @@
         <div class="cam-status" id="camStatus">Position your face inside the circle</div>
       </div>
 
-      <button class="primary" id="enrollBtn">Start Face Capture (3 Photos)</button>
+      <button class="primary" id="enrollBtn">Start Biometric Capture (3 Shots)</button>
       <div class="msg" id="msg"></div>
-      <div class="tip">Tip: Follow the on-screen arrows. Photo 1: Look straight. Photo 2: Turn right. Photo 3: Turn left.</div>
     </div>
 
+    <!-- Employee Directory Card -->
     <div class="card">
-      <div class="toolbar">
-        <h2 style="margin:0">Employees <span class="muted" id="count"></span></h2>
-        <input id="search" placeholder="Search name or code">
+      <div class="card-header">
+        <h2 class="card-title"><span>👥</span> Registered Employees <span style="color:var(--muted);font-size:13px" id="count"></span></h2>
+        <button onclick="loadEmployees()" style="background:none;border:none;color:var(--primary);font-weight:700;font-size:13px;cursor:pointer">↻ Refresh</button>
       </div>
-      <table>
-        <thead><tr><th>Code</th><th>Name</th><th>Enrolled</th><th></th></tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
+
+      <div class="search-wrap">
+        <input id="search" placeholder="🔍 Search by name or employee code...">
+      </div>
+
+      <div class="emp-list" id="empList">
+        <!-- Rendered by JS -->
+      </div>
     </div>
   </div>
 </main>
+
+<!-- Mobile Bottom Navigation -->
+<div class="mobile-bottom-nav">
+  <a href="/"><span class="nav-icon">🎯</span><span>Kiosk</span></a>
+  <a href="/dashboard.html"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+  <a class="active" href="/admin.html"><span class="nav-icon">👥</span><span>Employees</span></a>
+  <a onclick="logout()"><span class="nav-icon">🔒</span><span>Logout</span></a>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
@@ -310,13 +675,57 @@ const authHeaders = (extra = {}) => ({
 const video = $('video');
 let all = [], modelsReady = false, isCapturing = false;
 
-function setMsg(text, type = '') { $('msg').textContent = text; $('msg').className = 'msg ' + type; }
+function setMsg(text, type = '') {
+  const el = $('msg');
+  el.textContent = text;
+  el.className = 'msg show ' + type;
+}
 
 function setDirection(icon, text, statusText) {
   $('dirIcon').textContent = icon;
   $('dirText').textContent = text;
   if (statusText) $('camStatus').textContent = statusText;
 }
+
+// Format 24h string (e.g. "09:30") into 12h AM/PM
+function formatTime12(tStr) {
+  if (!tStr) return '09:30 AM';
+  const [h, m] = tStr.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${String(h12).padStart(2, '0')}:${String(m || 0).padStart(2, '0')} ${ampm}`;
+}
+
+// Compute threshold preview time
+function addMinutes(tStr, mins) {
+  const [h, m] = (tStr || '09:30').split(':').map(Number);
+  const total = (h * 60) + (m || 0) + mins;
+  const newH = Math.floor(total / 60) % 24;
+  const newM = total % 60;
+  return formatTime12(`${newH}:${newM}`);
+}
+
+// Update Policy Chips dynamically
+function updatePolicyPreview() {
+  const sStart = $('shiftStart').value || '09:30';
+  const lateGrace = Math.max(0, parseInt($('lateGraceMinutes').value) || 0);
+  const absentGrace = Math.max(0.5, parseFloat($('absentGraceHours').value) || 2);
+
+  const lateCutoff = addMinutes(sStart, lateGrace);
+  const absentCutoff = addMinutes(sStart, Math.round(absentGrace * 60));
+
+  $('policyPreviewChips').innerHTML = `
+    <span class="chip ontime">🟢 On Time: Before ${lateCutoff}</span>
+    <span class="chip late">🟡 Late: ${lateCutoff} – ${absentCutoff}</span>
+    <span class="chip absent">🔴 Absent: After ${absentCutoff}</span>
+    <span class="chip limit">⚡ Daily Max: 2 Punches (1 IN + 1 OUT)</span>
+  `;
+}
+
+['shiftStart', 'shiftEnd', 'lateGraceMinutes', 'absentGraceHours'].forEach(id => {
+  $(id).addEventListener('input', updatePolicyPreview);
+});
+updatePolicyPreview();
 
 // Real-time idle face monitor for biometric oval
 setInterval(async () => {
@@ -338,7 +747,9 @@ async function init() {
     await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
     await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
     await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
-    video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    video.srcObject = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+    });
     modelsReady = true;
   } catch (e) { setMsg('Camera or models error: ' + e.message, 'err'); }
   loadEmployees();
@@ -353,8 +764,13 @@ async function getDescriptor() {
 $('enrollBtn').addEventListener('click', async () => {
   const name = $('name').value.trim();
   const code = $('code').value.trim();
-  if (!name || !code) return setMsg('Please enter name and employee code', 'err');
-  if (!modelsReady) return setMsg('Camera not ready yet', 'err');
+  const shiftStart = $('shiftStart').value || '09:30';
+  const shiftEnd = $('shiftEnd').value || '18:00';
+  const lateGraceMinutes = parseInt($('lateGraceMinutes').value) || 15;
+  const absentGraceHours = parseFloat($('absentGraceHours').value) || 2;
+
+  if (!name || !code) return setMsg('Please enter both Full Name and Employee Code', 'err');
+  if (!modelsReady) return setMsg('Camera models not ready yet. Please wait a moment.', 'err');
 
   const btn = $('enrollBtn');
   btn.disabled = true;
@@ -375,7 +791,7 @@ $('enrollBtn').addEventListener('click', async () => {
     // --- Step 1: Look Straight ---
     $('dot1').className = 'step-dot active';
     setDirection('🎯', 'Step 1/3: Look STRAIGHT ahead', 'Hold still facing the camera...');
-    setMsg('Step 1 of 3: Look straight at the camera');
+    setMsg('Step 1 of 3: Look straight at camera');
     await new Promise(r => setTimeout(r, 1300));
     let d1 = await getDescriptor();
     if (d1) {
@@ -388,7 +804,7 @@ $('enrollBtn').addEventListener('click', async () => {
     $('dot2').className = 'step-dot active';
     $('arrowRight').style.display = 'block';
     setDirection('➡️', 'Step 2/3: Turn head SLIGHTLY RIGHT', 'Turn head slightly towards your right ➡️');
-    setMsg('Step 2 of 3: Turn your head slightly right');
+    setMsg('Step 2 of 3: Turn head slightly right');
     await new Promise(r => setTimeout(r, 1600));
     let d2 = await getDescriptor();
     if (d2) {
@@ -402,7 +818,7 @@ $('enrollBtn').addEventListener('click', async () => {
     $('dot3').className = 'step-dot active';
     $('arrowLeft').style.display = 'block';
     setDirection('⬅️', 'Step 3/3: Turn head SLIGHTLY LEFT', 'Turn head slightly towards your left ⬅️');
-    setMsg('Step 3 of 3: Turn your head slightly left');
+    setMsg('Step 3 of 3: Turn head slightly left');
     await new Promise(r => setTimeout(r, 1600));
     let d3 = await getDescriptor();
     if (d3) {
@@ -416,16 +832,24 @@ $('enrollBtn').addEventListener('click', async () => {
       resetSteps();
       $('faceRing').className = 'face-ring';
       setDirection('❌', 'No face detected', 'Improve lighting and try again');
-      return setMsg('No face detected. Improve lighting and try again.', 'err');
+      return setMsg('No face detected. Please ensure good lighting and try again.', 'err');
     }
 
-    setDirection('⏳', 'Saving Employee...', 'Saving face data to MongoDB Atlas...');
-    setMsg('Saving employee to database...');
+    setDirection('⏳', 'Saving to Database...', 'Registering in MongoDB Atlas...');
+    setMsg('Saving employee profile and policy...');
 
     const r = await fetch('/api/employees', {
       method: 'POST',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ name, code, descriptors })
+      body: JSON.stringify({
+        name,
+        code,
+        shiftStart,
+        shiftEnd,
+        lateGraceMinutes,
+        absentGraceHours,
+        descriptors
+      })
     });
 
     if (r.status === 401) {
@@ -441,9 +865,10 @@ $('enrollBtn').addEventListener('click', async () => {
       return setMsg(data.error || 'Failed to enroll', 'err');
     }
 
-    setDirection('🎉', 'Enrolled Successfully!', `${name} is now registered.`);
-    setMsg(`${name} enrolled successfully (${descriptors.length} photos captured)`, 'ok');
-    $('name').value = ''; $('code').value = '';
+    setDirection('🎉', 'Enrolled Successfully!', `${name} (${code}) is now registered.`);
+    setMsg(`✓ ${name} enrolled successfully! Shift: ${formatTime12(shiftStart)} (Late > ${lateGraceMinutes}m, Absent > ${absentGraceHours}h)`, 'ok');
+    $('name').value = '';
+    $('code').value = '';
     loadEmployees();
   } catch (e) {
     setDirection('⚠️', 'Error', e.message);
@@ -451,18 +876,14 @@ $('enrollBtn').addEventListener('click', async () => {
   } finally {
     isCapturing = false;
     btn.disabled = false;
-    setTimeout(() => {
-      resetSteps();
-    }, 4000);
+    setTimeout(() => { resetSteps(); }, 4000);
   }
 });
 
 async function loadEmployees() {
   try {
     const r = await fetch('/api/employees', { headers: authHeaders() });
-    if (r.status === 401) {
-      return logout();
-    }
+    if (r.status === 401) return logout();
     if (!r.ok) return;
     all = await r.json();
     render();
@@ -476,19 +897,42 @@ function render() {
   const list = all
     .filter(e => !q || e.name.toLowerCase().includes(q) || e.code.toLowerCase().includes(q))
     .sort((a, b) => a.name.localeCompare(b.name));
-  $('count').textContent = `(${all.length})`;
-  $('rows').innerHTML = list.length ? list.map(e => `
-    <tr>
-      <td><span class="code">${esc(e.code)}</span></td>
-      <td>${esc(e.name)}</td>
-      <td class="muted">${new Date(e.enrolledAt).toLocaleDateString('en-GB')}</td>
-      <td><button class="danger" onclick="removeEmp('${e.id}', '${esc(e.name)}')">Delete</button></td>
-    </tr>`).join('')
-    : `<tr><td colspan="4" class="empty">No employees found</td></tr>`;
+
+  $('count').textContent = `(${all.length} total)`;
+
+  if (!list.length) {
+    $('empList').innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">No employees found</div>`;
+    return;
+  }
+
+  $('empList').innerHTML = list.map(e => {
+    const sStart = formatTime12(e.shiftStart || '09:30');
+    const lateM = e.lateGraceMinutes !== undefined ? e.lateGraceMinutes : 15;
+    const absH = e.absentGraceHours !== undefined ? e.absentGraceHours : 2;
+    const initials = e.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+    return `
+      <div class="emp-card">
+        <div class="emp-info">
+          <div class="emp-avatar">${esc(initials)}</div>
+          <div class="emp-details">
+            <div class="emp-name">${esc(e.name)}</div>
+            <div class="emp-tags">
+              <span class="code-badge">${esc(e.code)}</span>
+              <span class="shift-badge">🕒 ${sStart}</span>
+              <span class="shift-badge">⚠️ Late > +${lateM}m</span>
+              <span class="shift-badge">❌ Absent > +${absH}h</span>
+            </div>
+          </div>
+        </div>
+        <button class="del-btn" onclick="removeEmp('${e.id}', '${esc(e.name)}')">Delete</button>
+      </div>
+    `;
+  }).join('');
 }
 
 async function removeEmp(id, name) {
-  if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+  if (!confirm(`Delete employee ${name}? This cannot be undone.`)) return;
   const res = await fetch('/api/employees/' + id, {
     method: 'DELETE',
     headers: authHeaders()

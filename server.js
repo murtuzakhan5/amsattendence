@@ -127,6 +127,7 @@ function distance(a, b) {
   return Math.sqrt(s);
 }
 const isValidDescriptor = d => Array.isArray(d) && d.length === 128 && d.every(Number.isFinite);
+
 const todayStr = (ms = Date.now()) => {
   try {
     return new Intl.DateTimeFormat('en-CA', { timeZone: CONFIG.timeZone }).format(new Date(ms));
@@ -134,6 +135,7 @@ const todayStr = (ms = Date.now()) => {
     return new Date(ms).toLocaleDateString('en-CA');
   }
 };
+
 const timeStr = ms => {
   try {
     return new Intl.DateTimeFormat('en-GB', {
@@ -144,6 +146,25 @@ const timeStr = ms => {
     return new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 };
+
+function getMinutesOfDay(ms, timeZone) {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timeZone || CONFIG.timeZone,
+      hour: 'numeric',
+      minute: 'numeric',
+      hourCycle: 'h23'
+    });
+    const parts = formatter.formatToParts(new Date(ms));
+    const h = Number(parts.find(p => p.type === 'hour').value);
+    const m = Number(parts.find(p => p.type === 'minute').value);
+    return h * 60 + m;
+  } catch (e) {
+    const d = new Date(ms);
+    return d.getHours() * 60 + d.getMinutes();
+  }
+}
+
 const escapeRegex = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // ---------- Auth Routes ----------
@@ -202,7 +223,11 @@ app.post('/api/auth/change-password', requireAdmin, async (req, res) => {
 
 // ---------- Config endpoint (used by dashboard & kiosk) ----------
 app.get('/api/config', (req, res) => {
-  res.json({ shiftStart: CONFIG.shiftStart, targetHours: CONFIG.targetHours });
+  res.json({
+    shiftStart: CONFIG.shiftStart,
+    targetHours: CONFIG.targetHours,
+    timeZone: CONFIG.timeZone
+  });
 });
 
 // ---------- Employees (Protected by requireAdmin) ----------
@@ -214,6 +239,10 @@ app.get('/api/employees', requireAdmin, async (req, res) => {
       id: e.id || e._id.toString(),
       name: e.name,
       code: e.code,
+      shiftStart: e.shiftStart || CONFIG.shiftStart || '09:30',
+      shiftEnd: e.shiftEnd || '18:00',
+      lateGraceMinutes: e.lateGraceMinutes !== undefined ? Number(e.lateGraceMinutes) : 15,
+      absentGraceHours: e.absentGraceHours !== undefined ? Number(e.absentGraceHours) : 2,
       enrolledAt: e.enrolledAt,
       faces: (e.descriptors || []).length
     })));
@@ -225,7 +254,16 @@ app.get('/api/employees', requireAdmin, async (req, res) => {
 
 app.post('/api/employees', requireAdmin, async (req, res) => {
   try {
-    const { name, code, descriptors } = req.body || {};
+    const {
+      name,
+      code,
+      descriptors,
+      shiftStart = '09:30',
+      shiftEnd = '18:00',
+      lateGraceMinutes = 15,
+      absentGraceHours = 2
+    } = req.body || {};
+
     if (!name || !code || !Array.isArray(descriptors) || descriptors.length === 0)
       return res.status(400).json({ error: 'Name, code and face data are required' });
     if (!descriptors.every(isValidDescriptor))
@@ -271,9 +309,14 @@ app.post('/api/employees', requireAdmin, async (req, res) => {
       id: Date.now().toString(),
       name: String(name).trim(),
       code: cleanCode,
+      shiftStart: String(shiftStart || '09:30').trim(),
+      shiftEnd: String(shiftEnd || '18:00').trim(),
+      lateGraceMinutes: Math.max(0, Number(lateGraceMinutes) || 15),
+      absentGraceHours: Math.max(0.5, Number(absentGraceHours) || 2),
       descriptors,
       enrolledAt: Date.now(),
     };
+
     await db.collection('employees').insertOne(emp);
     res.status(201).json({ ok: true, id: emp.id });
   } catch (err) {
@@ -298,6 +341,7 @@ app.delete('/api/employees/:id', requireAdmin, async (req, res) => {
 });
 
 // ---------- Attendance (Public Kiosk Route) ----------
+// Rule: Exactly 2 punches per employee per day (1 Check-In + 1 Check-Out)
 app.post('/api/mark', async (req, res) => {
   try {
     const { descriptor } = req.body || {};
@@ -315,7 +359,7 @@ app.post('/api/mark', async (req, res) => {
     }
 
     if (!best || bestDist > CONFIG.matchThreshold)
-      return res.status(404).json({ error: 'Face not recognized' });
+      return res.status(404).json({ error: 'Face not recognized. Please face the camera clearly.' });
 
     const now = Date.now();
     const day = (req.body && req.body.date) || todayStr(now);
@@ -325,12 +369,81 @@ app.post('/api/mark', async (req, res) => {
       .sort({ time: 1 })
       .toArray();
 
+    const inPunch = todays.find(p => p.type === 'IN');
+    const outPunch = todays.find(p => p.type === 'OUT');
+
+    // RULE 1: Daily limit - only 2 punches per day (1 Check-In + 1 Check-Out)
+    if (inPunch && outPunch) {
+      return res.json({
+        ok: false,
+        completed: true,
+        name: best.name,
+        code: best.code,
+        timeStr: timeStr(now),
+        inTime: timeStr(inPunch.time),
+        outTime: timeStr(outPunch.time),
+        message: `Today's attendance completed! Checked IN at ${timeStr(inPunch.time)} and OUT at ${timeStr(outPunch.time)}. No more punches allowed today.`
+      });
+    }
+
+    // Cooldown check for repeat rapid scans
     const last = todays[todays.length - 1];
+    if (last && now - last.time < CONFIG.cooldownMs) {
+      return res.json({
+        ok: true,
+        duplicate: true,
+        name: best.name,
+        code: best.code,
+        type: last.type,
+        timeStr: timeStr(last.time),
+        arrivalStatus: last.arrivalStatus || 'ON_TIME',
+        statusNote: last.statusNote || '',
+        message: `Already recorded ${last.type} at ${timeStr(last.time)}. Please wait before scanning again.`
+      });
+    }
 
-    if (last && now - last.time < CONFIG.cooldownMs)
-      return res.json({ ok: true, duplicate: true, name: best.name, code: best.code, type: last.type, timeStr: timeStr(last.time) });
+    // Determine punch type:
+    // If no punch today -> 'IN'
+    // If IN already recorded -> 'OUT'
+    const type = !inPunch ? 'IN' : 'OUT';
 
-    const type = !last || last.type === 'OUT' ? 'IN' : 'OUT';
+    // Compute arrival status & late/absent rule for IN punch based on employee's custom settings
+    let arrivalStatus = 'ON_TIME';
+    let statusNote = 'On Time';
+
+    if (type === 'IN') {
+      const shiftStr = best.shiftStart || CONFIG.shiftStart || '09:30';
+      const [shH, shM] = shiftStr.split(':').map(Number);
+      const shiftStartMin = (shH * 60) + (shM || 0);
+      const punchMin = getMinutesOfDay(now, CONFIG.timeZone);
+
+      const lateGrace = best.lateGraceMinutes !== undefined ? Number(best.lateGraceMinutes) : 15;
+      const absentGraceHrs = best.absentGraceHours !== undefined ? Number(best.absentGraceHours) : 2;
+
+      const lateLimitMin = shiftStartMin + lateGrace;
+      const absentLimitMin = shiftStartMin + (absentGraceHrs * 60);
+
+      if (punchMin <= lateLimitMin) {
+        arrivalStatus = 'ON_TIME';
+        statusNote = 'On Time';
+      } else if (punchMin <= absentLimitMin) {
+        const lateBy = punchMin - shiftStartMin;
+        arrivalStatus = 'LATE';
+        statusNote = `Late by ${lateBy} mins`;
+      } else {
+        const lateByHrs = ((punchMin - shiftStartMin) / 60).toFixed(1);
+        arrivalStatus = 'ABSENT';
+        statusNote = `Absent (Arrived ${lateByHrs}h late)`;
+      }
+    } else {
+      // OUT punch: calculate total duration worked
+      const diffMs = now - inPunch.time;
+      const hours = (diffMs / (1000 * 60 * 60)).toFixed(1);
+      const mins = Math.round(diffMs / (1000 * 60));
+      arrivalStatus = inPunch.arrivalStatus || 'ON_TIME';
+      statusNote = `Completed day (${hours} hrs worked)`;
+    }
+
     const record = {
       id: now.toString(36) + Math.random().toString(36).slice(2, 6),
       employeeId: best.id,
@@ -339,9 +452,27 @@ app.post('/api/mark', async (req, res) => {
       type,
       date: day,
       time: now,
+      arrivalStatus,
+      statusNote,
+      shiftStart: best.shiftStart || '09:30',
+      lateGraceMinutes: best.lateGraceMinutes ?? 15,
+      absentGraceHours: best.absentGraceHours ?? 2,
     };
+
     await db.collection('attendance').insertOne(record);
-    res.json({ ok: true, duplicate: false, name: best.name, code: best.code, type, timeStr: timeStr(now) });
+
+    res.json({
+      ok: true,
+      duplicate: false,
+      completed: type === 'OUT',
+      name: best.name,
+      code: best.code,
+      type,
+      timeStr: timeStr(now),
+      arrivalStatus,
+      statusNote,
+      remainingPunches: type === 'IN' ? 1 : 0
+    });
   } catch (err) {
     console.error('Error marking attendance in MongoDB:', err);
     res.status(500).json({ error: 'Database error: ' + (err.message || 'Failed to record attendance') });
@@ -356,6 +487,7 @@ app.get('/api/attendance', async (req, res) => {
       .find({ date })
       .sort({ time: 1 })
       .toArray();
+
     res.json(records.map(r => ({
       id: r.id || r._id.toString(),
       employeeId: r.employeeId,
@@ -364,6 +496,8 @@ app.get('/api/attendance', async (req, res) => {
       type: r.type,
       date: r.date,
       time: r.time,
+      arrivalStatus: r.arrivalStatus || 'ON_TIME',
+      statusNote: r.statusNote || ''
     })));
   } catch (err) {
     console.error('Error fetching attendance from MongoDB:', err);

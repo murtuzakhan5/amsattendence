@@ -2,172 +2,773 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard | Attendance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Dashboard | Attendance Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#f4f6fa; --card:#fff; --line:#e5e8ef; --text:#1d2433; --muted:#6b7385; --primary:#2563eb; --primary-soft:#e8efff; --green:#16a34a; --green-soft:#dcfce7; --red:#dc2626; --red-soft:#fee2e2; --amber:#d97706; --amber-soft:#fef3c7; --gray-soft:#eef0f4; }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); font-size:14px; }
-  .layout { display:grid; grid-template-columns: 220px 1fr; min-height:100vh; }
-  aside { background:#0f172a; color:#cbd5e1; padding:22px 16px; }
-  .brand { color:#fff; font-size:17px; font-weight:700; margin:0 0 28px 8px; }
-  .brand small { display:block; font-size:11px; font-weight:500; color:#64748b; letter-spacing:.08em; text-transform:uppercase; }
-  .nav a { display:block; color:#cbd5e1; text-decoration:none; padding:10px 12px; border-radius:8px; margin-bottom:4px; font-weight:500; cursor:pointer; }
-  .nav a:hover { background:#1e293b; color:#fff; }
-  .nav a.active { background: var(--primary); color:#fff; }
-  main { padding:26px 30px; min-width:0; }
-  header.top { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:22px; }
-  h1 { font-size:22px; margin:0; } .sub { color:var(--muted); margin-top:4px; }
-  .controls { display:flex; gap:10px; flex-wrap:wrap; }
-  input, select, button { font:inherit; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; padding:9px 12px; }
-  button { cursor:pointer; font-weight:600; }
-  button.primary { background: var(--primary); border-color: var(--primary); color:#fff; }
-  .kpis { display:grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap:16px; margin-bottom:22px; }
-  .kpi { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
-  .kpi .label { color:var(--muted); font-size:13px; font-weight:500; }
-  .kpi .value { font-size:30px; font-weight:700; margin-top:8px; }
-  .kpi .hint { font-size:12px; color:var(--muted); margin-top:4px; }
-  .grid2 { display:grid; grid-template-columns: 2fr 1fr; gap:18px; margin-bottom:22px; }
-  @media (max-width: 1000px) { .grid2 { grid-template-columns:1fr; } .layout { grid-template-columns: 1fr; } aside { display:none; } }
-  .panel { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
-  .panel h3 { margin:0 0 14px; font-size:15px; }
-  .bars { display:flex; align-items:flex-end; gap:14px; height:170px; }
-  .bar-col { flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; }
-  .bar { width:100%; max-width:46px; background: var(--primary); border-radius:6px 6px 0 0; min-height:3px; }
-  .bar-col.today .bar { background:#1e40af; }
-  .bar-val { font-size:12px; font-weight:600; margin-bottom:6px; }
-  .bar-lbl { font-size:12px; color:var(--muted); margin-top:8px; }
-  .table-card { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
-  .table-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:16px 18px; border-bottom:1px solid var(--line); }
-  .table-head h3 { margin:0; font-size:15px; }
-  .tabs { display:flex; gap:6px; }
-  .tab { border:none; background:none; color:var(--muted); padding:7px 12px; border-radius:8px; }
-  .tab.active { background: var(--primary-soft); color: var(--primary); }
-  .table-wrap { overflow-x:auto; }
-  table { width:100%; border-collapse:collapse; min-width:820px; }
-  th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600; padding:12px 18px; background:#fafbfd; border-bottom:1px solid var(--line); }
-  td { padding:13px 18px; border-bottom:1px solid var(--line); vertical-align:middle; }
-  tr:last-child td { border-bottom:none; }
-  tr.clickable { cursor:pointer; } tr.clickable:hover td { background:#f8faff; }
-  .person { display:flex; align-items:center; gap:12px; }
-  .avatar { width:36px; height:36px; border-radius:50%; background:var(--primary-soft); color:var(--primary); font-weight:700; display:grid; place-items:center; font-size:13px; flex-shrink:0; }
-  .name { font-weight:600; } .code { font-size:12px; color:var(--muted); }
-  .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pill::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
-  .pill.in { background:var(--green-soft); color:var(--green); }
-  .pill.out { background:var(--gray-soft); color:#475569; }
-  .pill.absent { background:var(--red-soft); color:var(--red); }
-  .late { margin-left:6px; background:var(--amber-soft); color:var(--amber); padding:2px 7px; border-radius:6px; font-size:11px; font-weight:700; }
-  .progress { height:6px; background:var(--gray-soft); border-radius:99px; margin-top:6px; overflow:hidden; min-width:120px; }
-  .progress span { display:block; height:100%; background:var(--primary); border-radius:99px; }
-  .punches { display:flex; flex-wrap:wrap; gap:6px; }
-  .pch { font-size:12px; padding:3px 8px; border-radius:6px; background:var(--gray-soft); color:#334155; }
-  .pch.IN { background:var(--green-soft); color:var(--green); }
-  .muted { color:var(--muted); }
-  .empty { text-align:center; color:var(--muted); padding:40px; }
-  .overlay { position:fixed; inset:0; background:rgba(15,23,42,.45); display:none; align-items:center; justify-content:center; padding:20px; }
-  .overlay.show { display:flex; }
-  .modal { background:var(--card); border-radius:16px; width:100%; max-width:440px; padding:22px; }
-  .modal h3 { margin:0 0 4px; }
-  .modal .row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
-  .modal .row:last-child { border-bottom:none; }
-  .modal button { width:100%; margin-top:16px; }
+  :root {
+    --bg: #090d16;
+    --card: #111827;
+    --card-hover: #172033;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-active: rgba(59, 130, 246, 0.4);
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --primary: #3b82f6;
+    --primary-glow: rgba(59, 130, 246, 0.35);
+    --primary-soft: rgba(59, 130, 246, 0.12);
+    --green: #10b981;
+    --green-glow: rgba(16, 185, 129, 0.3);
+    --green-soft: rgba(16, 185, 129, 0.12);
+    --amber: #f59e0b;
+    --amber-soft: rgba(245, 158, 11, 0.12);
+    --red: #ef4444;
+    --red-soft: rgba(239, 68, 68, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    min-height: 100vh;
+    padding-bottom: 90px;
+    background-image: 
+      radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+    background-attachment: fixed;
+  }
+
+  /* Header */
+  header {
+    background: rgba(17, 24, 39, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .brand-group { display: flex; align-items: center; gap: 12px; }
+  .brand-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    display: grid; place-items: center;
+    font-size: 18px;
+    box-shadow: 0 0 15px var(--primary-glow);
+  }
+  .brand-title { font-weight: 800; font-size: 16px; letter-spacing: -0.02em; }
+  .brand-badge {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    background: var(--primary-soft);
+    color: var(--primary);
+    padding: 2px 8px; border-radius: 999px;
+    border: 1px solid var(--line-active);
+    margin-left: 6px;
+  }
+
+  nav.desktop-nav { display: flex; align-items: center; gap: 8px; }
+  nav.desktop-nav a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.15s ease;
+  }
+  nav.desktop-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+  nav.desktop-nav a.active { color: #fff; background: var(--primary-soft); border: 1px solid var(--line-active); }
+  .logout-btn {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .logout-btn:hover { background: var(--red); color: #fff; }
+
+  /* Main Container */
+  main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 20px;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .page-title h1 {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .page-title p {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  /* Filter Controls */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  input, select, button {
+    font: inherit;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 9px 13px;
+    font-size: 13px;
+    transition: all 0.15s ease;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 10px var(--primary-soft);
+    background: rgba(255, 255, 255, 0.07);
+  }
+  select option {
+    background: #111827;
+    color: #f8fafc;
+  }
+  button.action-btn {
+    cursor: pointer;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  button.action-btn.primary {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border: none;
+    color: #fff;
+    box-shadow: 0 2px 10px var(--primary-glow);
+  }
+  button.action-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  /* View switcher tabs */
+  .view-tabs {
+    display: flex;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+    padding: 3px;
+    border-radius: 10px;
+    gap: 4px;
+  }
+  .view-tab {
+    padding: 6px 14px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .view-tab.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 8px var(--primary-glow);
+  }
+
+  /* KPI Grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+  }
+  .kpi-card:hover {
+    border-color: var(--line-active);
+    transform: translateY(-2px);
+  }
+  .kpi-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent, var(--primary));
+  }
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+  .kpi-value {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 8px 0 4px;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Charts & Breakdown Grid */
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 18px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 960px) {
+    .analytics-grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Bar Chart */
+  .bars-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    height: 160px;
+    padding-top: 10px;
+  }
+  .bar-col {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    position: relative;
+  }
+  .bar-val {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .bar-fill {
+    width: 100%;
+    max-width: 44px;
+    background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+    border-radius: 6px 6px 0 0;
+    min-height: 4px;
+    transition: height 0.5s ease;
+  }
+  .bar-col.today .bar-fill {
+    background: linear-gradient(180deg, #10b981, #059669);
+    box-shadow: 0 0 12px var(--green-glow);
+  }
+  .bar-lbl {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-top: 8px;
+  }
+
+  /* Breakdown Bars */
+  .breakdown-item { margin-bottom: 14px; }
+  .breakdown-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .progress-bg {
+    height: 7px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+
+  /* Table Card */
+  .table-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .table-top {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .table-top h3 { font-size: 16px; font-weight: 700; }
+  .table-scroll { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+    text-align: left;
+  }
+  th {
+    padding: 12px 18px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--line);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+  td {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr.clickable {
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  tr.clickable:hover td {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  /* Employee Cell */
+  .person { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(16,185,129,0.2));
+    border: 1px solid var(--line-active);
+    color: #fff;
+    font-weight: 800;
+    font-size: 13px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .p-name { font-weight: 700; font-size: 14px; color: #fff; }
+  .p-code { font-size: 11px; color: var(--muted); font-family: monospace; }
+
+  /* Badges & Status */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .pill::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .pill.in { background: var(--green-soft); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .pill.out { background: var(--primary-soft); color: #60a5fa; border: 1px solid var(--line-active); }
+  .pill.absent { background: var(--red-soft); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+  .arrival-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .arrival-badge.ontime { background: var(--green-soft); color: #34d399; }
+  .arrival-badge.late { background: var(--amber-soft); color: #fbbf24; }
+  .arrival-badge.absent { background: var(--red-soft); color: #f87171; }
+
+  .policy-tag {
+    font-size: 11px;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    white-space: nowrap;
+  }
+
+  /* Punch Stepper / Tags */
+  .punch-stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .punch-step {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .punch-step.in { background: var(--green-soft); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .punch-step.out { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid var(--line-active); }
+  .punch-step.none { background: rgba(255, 255, 255, 0.04); color: var(--muted); }
+
+  .hours-meter {
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .empty-cell { color: var(--muted); font-size: 12px; }
+  .empty-row { text-align: center; color: var(--muted); padding: 48px; font-size: 14px; }
+
+  /* Modal */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 8, 15, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 200;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--line-active);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 480px;
+    padding: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  }
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .modal-head h3 { font-size: 18px; font-weight: 800; }
+  .modal-head .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .close-icon {
+    background: rgba(255, 255, 255, 0.06);
+    border: none;
+    color: var(--muted);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: grid; place-items: center;
+  }
+  .close-icon:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+  .modal-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .timeline-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-actions button {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    color: #fff;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .modal-actions button:hover { background: rgba(255, 255, 255, 0.1); }
+
+  /* Mobile Bottom App Navigation */
+  .mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+  }
+  .mobile-bottom-nav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+    padding: 6px 0;
+  }
+  .mobile-bottom-nav a.active { color: var(--primary); }
+  .mobile-bottom-nav a .nav-icon { font-size: 18px; }
+
+  @media (max-width: 768px) {
+    nav.desktop-nav { display: none; }
+    .mobile-bottom-nav { display: flex; }
+    header { padding: 12px 16px; }
+    main { padding: 16px 12px; }
+    .page-header { margin-bottom: 16px; }
+    .toolbar { width: 100%; }
+    .toolbar input, .toolbar select, .toolbar button { flex: 1 1 calc(50% - 6px); }
+    .toolbar button.action-btn.primary { flex: 1 1 100%; justify-content: center; }
+  }
 </style>
 </head>
 <body>
-<div class="layout">
-  <aside>
-    <div class="brand">ATTENDANCE<small>Management System</small></div>
-    <nav class="nav">
-      <a class="active" data-view="dashboard">Dashboard</a>
-      <a data-view="log">Punch Log</a>
-      <a href="/admin.html">Employees</a>
-      <a href="/">Kiosk</a>
-      <a onclick="logout()" style="color:#f87171;margin-top:24px;border:1px solid rgba(239,68,68,0.25);text-align:center">Logout</a>
-    </nav>
-  </aside>
 
-  <main>
-    <header class="top">
-      <div>
-        <h1 id="pageTitle">Dashboard</h1>
-        <div class="sub" id="pageSub"></div>
-      </div>
-      <div class="controls">
-        <input type="date" id="date">
-        <input type="text" id="search" placeholder="Search name or code">
-        <select id="filter">
-          <option value="all">All statuses</option>
-          <option value="in">In office</option>
-          <option value="out">Checked out</option>
-          <option value="absent">Absent</option>
-          <option value="late">Late arrival</option>
-        </select>
-        <button class="primary" id="exportBtn">Export CSV</button>
-      </div>
-    </header>
+<header>
+  <div class="brand-group">
+    <div class="brand-icon">⚡</div>
+    <div>
+      <span class="brand-title">ATTENDANCE PRO</span>
+      <span class="brand-badge">DASHBOARD</span>
+    </div>
+  </div>
+  <nav class="desktop-nav">
+    <a href="/">Kiosk Mode</a>
+    <a href="/admin.html">Manage Staff</a>
+    <a href="/dashboard.html" class="active">Live Dashboard</a>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </nav>
+</header>
 
-    <section id="view-dashboard">
-      <div class="kpis">
-        <div class="kpi"><div class="label">Total Employees</div><div class="value" id="kTotal">0</div><div class="hint">Enrolled staff</div></div>
-        <div class="kpi"><div class="label">Present</div><div class="value" id="kPresent">0</div><div class="hint" id="kPct">—</div></div>
-        <div class="kpi"><div class="label">In Office Now</div><div class="value" id="kInside">0</div><div class="hint">Checked in, not out</div></div>
-        <div class="kpi"><div class="label">Late Arrivals</div><div class="value" id="kLate">0</div><div class="hint">After <span id="shiftLbl"></span></div></div>
-        <div class="kpi"><div class="label">Absent</div><div class="value" id="kAbsent">0</div><div class="hint">No punch recorded</div></div>
-        <div class="kpi"><div class="label">Avg. Hours</div><div class="value" id="kAvg">0h</div><div class="hint">Of those present</div></div>
-      </div>
+<main>
+  <div class="page-header">
+    <div class="page-title">
+      <h1 id="pageTitle">Attendance Overview</h1>
+      <p id="pageSub">Real-time attendance & shift verification</p>
+    </div>
 
-      <div class="grid2">
-        <div class="panel"><h3>Attendance – Last 7 Days</h3><div class="bars" id="weekBars"></div></div>
-        <div class="panel"><h3>Status Breakdown</h3><div id="breakdown"></div></div>
+    <div class="toolbar">
+      <div class="view-tabs">
+        <button class="view-tab active" id="tabDash" onclick="switchView('dashboard')">Summary</button>
+        <button class="view-tab" id="tabLog" onclick="switchView('log')">Punch Log</button>
       </div>
+      <input type="date" id="dateInput">
+      <input type="text" id="searchInput" placeholder="Search employee...">
+      <select id="filterSelect">
+        <option value="all">All Statuses</option>
+        <option value="in">In Office (1/2)</option>
+        <option value="out">Day Complete (2/2)</option>
+        <option value="late">Late Arrivals</option>
+        <option value="absent">Absent</option>
+      </select>
+      <button class="action-btn primary" id="exportBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+    </div>
+  </div>
 
-      <div class="table-card">
-        <div class="table-head">
-          <h3>Employee Attendance</h3>
-          <div class="muted" id="tableCount"></div>
+  <!-- Dashboard Overview View -->
+  <section id="viewDashboard">
+    <!-- KPI Summary Grid -->
+    <div class="kpi-grid">
+      <div class="kpi-card" style="--accent: #3b82f6">
+        <div class="kpi-label">Total Staff</div>
+        <div class="kpi-value" id="kTotal">0</div>
+        <div class="kpi-sub">Enrolled employees</div>
+      </div>
+      <div class="kpi-card" style="--accent: #10b981">
+        <div class="kpi-label">Present Today</div>
+        <div class="kpi-value" id="kPresent">0</div>
+        <div class="kpi-sub" id="kPct">—</div>
+      </div>
+      <div class="kpi-card" style="--accent: #06b6d4">
+        <div class="kpi-label">In Office Now</div>
+        <div class="kpi-value" id="kInside">0</div>
+        <div class="kpi-sub">Punched In (1/2)</div>
+      </div>
+      <div class="kpi-card" style="--accent: #8b5cf6">
+        <div class="kpi-label">Day Completed</div>
+        <div class="kpi-value" id="kCompleted">0</div>
+        <div class="kpi-sub">Checked Out (2/2)</div>
+      </div>
+      <div class="kpi-card" style="--accent: #f59e0b">
+        <div class="kpi-label">Late Arrivals</div>
+        <div class="kpi-value" id="kLate">0</div>
+        <div class="kpi-sub">Exceeded grace period</div>
+      </div>
+      <div class="kpi-card" style="--accent: #ef4444">
+        <div class="kpi-label">Absent</div>
+        <div class="kpi-value" id="kAbsent">0</div>
+        <div class="kpi-sub">No punch / past cutoff</div>
+      </div>
+    </div>
+
+    <!-- Analytics Charts -->
+    <div class="analytics-grid">
+      <div class="panel">
+        <div class="panel-title">
+          <span>Weekly Attendance Trend</span>
+          <span style="font-size: 12px; color: var(--muted); font-weight: 500;">Last 7 Days</span>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Employee</th><th>Status</th><th>First In</th><th>Last Out</th><th>Hours Worked</th><th>Punches</th></tr></thead>
-            <tbody id="rows"></tbody>
-          </table>
-        </div>
+        <div class="bars-wrap" id="weekBars"></div>
       </div>
-    </section>
 
-    <section id="view-log" style="display:none">
-      <div class="table-card">
-        <div class="table-head"><h3>Punch Log</h3><div class="muted" id="logCount"></div></div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Time</th><th>Employee</th><th>Code</th><th>Event</th></tr></thead>
-            <tbody id="logRows"></tbody>
-          </table>
+      <div class="panel">
+        <div class="panel-title">
+          <span>Status Distribution</span>
+          <span style="font-size: 12px; color: var(--muted); font-weight: 500;" id="breakdownTotal">0 total</span>
         </div>
+        <div id="breakdownList"></div>
       </div>
-    </section>
-  </main>
-</div>
+    </div>
 
+    <!-- Employee Table -->
+    <div class="table-card">
+      <div class="table-top">
+        <h3>Staff Daily Records</h3>
+        <span style="font-size: 12px; color: var(--muted); font-weight: 600;" id="tableCount">0 staff members</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Shift & Policy</th>
+              <th>Status</th>
+              <th>Arrival Verification</th>
+              <th>Check In</th>
+              <th>Check Out</th>
+              <th>Hours Worked</th>
+              <th>Punch Stepper (Max 2/Day)</th>
+            </tr>
+          </thead>
+          <tbody id="rowsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Live Punch Log View -->
+  <section id="viewLog" style="display: none;">
+    <div class="table-card">
+      <div class="table-top">
+        <h3>Complete Audit Log</h3>
+        <span style="font-size: 12px; color: var(--muted); font-weight: 600;" id="logCount">0 events</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Employee</th>
+              <th>Code</th>
+              <th>Punch Event</th>
+              <th>Arrival Status</th>
+              <th>Policy Evaluation</th>
+            </tr>
+          </thead>
+          <tbody id="logRowsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Details Modal -->
 <div class="overlay" id="overlay">
   <div class="modal">
-    <h3 id="mName"></h3>
-    <div class="muted" id="mMeta"></div>
-    <div id="mList" style="margin-top:14px"></div>
-    <button id="mClose">Close</button>
+    <div class="modal-head">
+      <div>
+        <h3 id="mName">Staff Details</h3>
+        <div class="sub" id="mMeta">Code · Shift</div>
+      </div>
+      <button class="close-icon" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-timeline" id="mTimeline"></div>
+    <div class="modal-actions">
+      <button onclick="closeModal()">Close</button>
+    </div>
   </div>
 </div>
 
+<!-- Mobile Bottom Navigation -->
+<nav class="mobile-bottom-nav">
+  <a href="/">
+    <span class="nav-icon">📷</span>
+    <span>Kiosk</span>
+  </a>
+  <a href="/dashboard.html" class="active">
+    <span class="nav-icon">📊</span>
+    <span>Dashboard</span>
+  </a>
+  <a href="/admin.html">
+    <span class="nav-icon">👥</span>
+    <span>Employees</span>
+  </a>
+  <a onclick="logout()" style="color: #f87171;">
+    <span class="nav-icon">🚪</span>
+    <span>Logout</span>
+  </a>
+</nav>
+
 <script>
 const $ = id => document.getElementById(id);
-const todayStr = () => new Date().toLocaleDateString('en-CA');
-const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-const fmtTime = ms => new Date(ms).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
-const fmtDur = ms => { if (!ms || ms <= 0) return '0h 00m'; const m = Math.round(ms / 60000); return `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}m`; };
-const initials = n => n.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
-const isToday = () => $('date').value === todayStr();
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
+// Auth guard
 const token = localStorage.getItem('admin_token');
 if (!token) {
   window.location.href = '/login.html?redirect=/dashboard.html';
@@ -184,179 +785,430 @@ const authHeaders = (extra = {}) => ({
   ...extra
 });
 
-$('date').value = todayStr();
+// Helper functions
+const todayStr = () => {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+};
+const fmtTime = ms => {
+  if (!ms) return '—';
+  return new Date(ms).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+};
+const fmtDur = ms => {
+  if (!ms || ms <= 0) return '0h 00m';
+  const m = Math.round(ms / 60000);
+  return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+};
+const initials = n => (n || '').split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase() || 'EM';
 
-let CFG = { shiftStart: '09:30', targetHours: 8 };
-let employees = [], records = [], rowsData = [];
+function parseTimeToMin(tStr) {
+  if (!tStr || !tStr.includes(':')) return 9 * 60; // 09:00 default
+  const [h, m] = tStr.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
 
-const shiftMin = () => { const [h, m] = CFG.shiftStart.split(':').map(Number); return h * 60 + m; };
-const minOfDay = ms => { const d = new Date(ms); return d.getHours() * 60 + d.getMinutes(); };
+function getPunchMin(ms) {
+  const d = new Date(ms);
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+let employees = [];
+let records = [];
+let rowsData = [];
+
+$('dateInput').value = todayStr();
+
+function switchView(view) {
+  if (view === 'dashboard') {
+    $('viewDashboard').style.display = 'block';
+    $('viewLog').style.display = 'none';
+    $('tabDash').classList.add('active');
+    $('tabLog').classList.remove('active');
+    $('pageTitle').textContent = 'Attendance Overview';
+  } else {
+    $('viewDashboard').style.display = 'none';
+    $('viewLog').style.display = 'block';
+    $('tabDash').classList.remove('active');
+    $('tabLog').classList.add('active');
+    $('pageTitle').textContent = 'Audit Punch Log';
+  }
+}
 
 function summarize(emp, recs) {
   const mine = recs.filter(r => r.employeeId === emp.id).sort((a, b) => a.time - b.time);
   let worked = 0, openIn = null, firstIn = null, lastOut = null;
+
   for (const r of mine) {
-    if (r.type === 'IN') { openIn = r.time; if (!firstIn) firstIn = r; }
-    else { if (openIn) { worked += r.time - openIn; openIn = null; } lastOut = r; }
+    if (r.type === 'IN') {
+      openIn = r.time;
+      if (!firstIn) firstIn = r;
+    } else {
+      if (openIn) {
+        worked += (r.time - openIn);
+        openIn = null;
+      }
+      lastOut = r;
+    }
   }
-  if (openIn && isToday()) worked += Date.now() - openIn;
-  const status = !mine.length ? 'absent' : mine[mine.length - 1].type === 'IN' ? 'in' : 'out';
-  const late = firstIn ? minOfDay(firstIn.time) > shiftMin() : false;
-  return { mine, worked, firstIn, lastOut, status, late };
+
+  const isSelectedToday = $('dateInput').value === todayStr();
+  if (openIn && isSelectedToday) {
+    worked += Math.max(0, Date.now() - openIn);
+  }
+
+  // Punches logic: max 2 punches per day (1 Check-in, 1 Check-out)
+  const isCompleted = mine.length >= 2;
+  const status = !mine.length ? 'absent' : (openIn ? 'in' : 'out');
+
+  // Policy evaluation for this specific employee
+  const sStart = emp.shiftStart || '09:00';
+  const sEnd = emp.shiftEnd || '18:00';
+  const lateGrace = Number(emp.lateGraceMinutes ?? 15);
+  const absentGrace = Number(emp.absentGraceHours ?? 2);
+
+  const startMin = parseTimeToMin(sStart);
+  const lateCutoff = startMin + lateGrace;
+  const absentCutoff = startMin + (absentGrace * 60);
+
+  let arrival = 'PENDING';
+  let arrivalNote = 'Not checked in yet';
+  let isLate = false;
+  let isAbsent = !mine.length;
+
+  if (firstIn) {
+    // If backend already marked arrivalStatus, respect it; otherwise calculate
+    if (firstIn.arrivalStatus) {
+      arrival = firstIn.arrivalStatus;
+      arrivalNote = firstIn.statusNote || (arrival === 'ON_TIME' ? 'On Time' : arrival === 'LATE' ? 'Late Arrival' : 'Marked Absent');
+      isLate = arrival === 'LATE';
+      isAbsent = arrival === 'ABSENT';
+    } else {
+      const punchMin = getPunchMin(firstIn.time);
+      if (punchMin <= lateCutoff) {
+        arrival = 'ON_TIME';
+        arrivalNote = 'On Time';
+      } else if (punchMin <= absentCutoff) {
+        arrival = 'LATE';
+        const lateMins = punchMin - startMin;
+        arrivalNote = `Late by ${lateMins}m`;
+        isLate = true;
+      } else {
+        arrival = 'ABSENT';
+        arrivalNote = `Exceeded ${absentGrace}h cutoff`;
+        isAbsent = true;
+      }
+    }
+  }
+
+  return {
+    emp,
+    mine,
+    worked,
+    firstIn,
+    lastOut,
+    status,
+    isCompleted,
+    arrival,
+    arrivalNote,
+    isLate,
+    isAbsent,
+    policy: { sStart, sEnd, lateGrace, absentGrace }
+  };
 }
 
-async function fetchDay(date) {
+async function fetchDayRecords(date) {
   try {
-    const r = await fetch('/api/attendance?date=' + date);
-    return r.ok ? await r.json() : [];
-  } catch { return []; }
+    const res = await fetch('/api/attendance?date=' + encodeURIComponent(date));
+    return res.ok ? await res.json() : [];
+  } catch (err) {
+    console.error('Fetch attendance error:', err);
+    return [];
+  }
 }
 
-async function load() {
+async function loadData() {
   try {
     const empRes = await fetch('/api/employees', { headers: authHeaders() });
-    if (empRes.status === 401) {
-      return logout();
-    }
+    if (empRes.status === 401) return logout();
     employees = empRes.ok ? await empRes.json() : [];
-    records = await fetchDay($('date').value);
-  } catch (e) {
-    console.error('Failed to load dashboard data:', e);
-    employees = []; records = [];
+    records = await fetchDayRecords($('dateInput').value);
+  } catch (err) {
+    console.error('Load error:', err);
+    employees = [];
+    records = [];
   }
-  const d = new Date($('date').value + 'T00:00:00');
-  $('pageSub').textContent = d.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-  render(); renderWeek(); renderLog();
+
+  const dateObj = new Date($('dateInput').value + 'T00:00:00');
+  $('pageSub').textContent = dateObj.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  renderAll();
+  renderWeeklyTrends();
+  renderAuditLog();
 }
 
-function render() {
-  const q = $('search').value.trim().toLowerCase();
-  const f = $('filter').value;
-  rowsData = employees.map(e => ({ emp: e, ...summarize(e, records) }));
+function renderAll() {
+  const query = $('searchInput').value.trim().toLowerCase();
+  const filter = $('filterSelect').value;
+
+  rowsData = employees.map(emp => summarize(emp, records));
 
   const present = rowsData.filter(r => r.status !== 'absent');
   const inside = rowsData.filter(r => r.status === 'in');
-  const late = rowsData.filter(r => r.late);
-  const avg = present.length ? present.reduce((s, r) => s + r.worked, 0) / present.length : 0;
+  const completed = rowsData.filter(r => r.isCompleted);
+  const late = rowsData.filter(r => r.isLate);
+  const absent = rowsData.filter(r => r.status === 'absent' || r.arrival === 'ABSENT');
 
   $('kTotal').textContent = employees.length;
   $('kPresent').textContent = present.length;
-  $('kPct').textContent = employees.length ? Math.round(present.length / employees.length * 100) + '% attendance' : '—';
+  $('kPct').textContent = employees.length ? Math.round(present.length / employees.length * 100) + '% present' : '—';
   $('kInside').textContent = inside.length;
+  $('kCompleted').textContent = completed.length;
   $('kLate').textContent = late.length;
   $('kAbsent').textContent = employees.length - present.length;
-  $('kAvg').textContent = fmtDur(avg);
-  $('shiftLbl').textContent = CFG.shiftStart;
 
+  // Status Breakdown Cards
   const total = employees.length || 1;
-  const outCount = rowsData.filter(r => r.status === 'out').length;
-  $('breakdown').innerHTML = [
-    ['In office', inside.length, 'var(--green)'],
-    ['Checked out', outCount, '#64748b'],
-    ['Absent', employees.length - present.length, 'var(--red)'],
-    ['Late arrivals', late.length, 'var(--amber)'],
-  ].map(([l, n, c]) => `
-    <div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>${l}</span><strong>${n}</strong></div>
-      <div class="progress"><span style="width:${Math.round(n / total * 100)}%;background:${c}"></span></div>
-    </div>`).join('');
+  $('breakdownTotal').textContent = `${employees.length} employees`;
+  $('breakdownList').innerHTML = [
+    { label: 'In Office (Punched In)', count: inside.length, color: '#10b981' },
+    { label: 'Day Completed (2/2 Punches)', count: completed.length, color: '#3b82f6' },
+    { label: 'Late Arrivals', count: late.length, color: '#f59e0b' },
+    { label: 'Absent (No Punch)', count: employees.length - present.length, color: '#ef4444' }
+  ].map(item => `
+    <div class="breakdown-item">
+      <div class="breakdown-meta">
+        <span style="color:var(--muted)">${item.label}</span>
+        <strong style="color:#fff">${item.count} <span style="font-size:11px;color:var(--muted)">(${Math.round(item.count/total*100)}%)</span></strong>
+      </div>
+      <div class="progress-bg">
+        <div class="progress-bar" style="width:${Math.round(item.count/total*100)}%;background:${item.color}"></div>
+      </div>
+    </div>
+  `).join('');
 
-  const visible = rowsData
-    .filter(r => f === 'all' || r.status === f || (f === 'late' && r.late))
-    .filter(r => !q || r.emp.name.toLowerCase().includes(q) || r.emp.code.toLowerCase().includes(q))
-    .sort((a, b) => a.emp.name.localeCompare(b.emp.name));
+  // Table rows filtering
+  const visible = rowsData.filter(r => {
+    if (filter === 'in') return r.status === 'in';
+    if (filter === 'out') return r.isCompleted;
+    if (filter === 'late') return r.isLate;
+    if (filter === 'absent') return r.status === 'absent' || r.arrival === 'ABSENT';
+    return true;
+  }).filter(r => {
+    if (!query) return true;
+    return r.emp.name.toLowerCase().includes(query) || (r.emp.code && r.emp.code.toLowerCase().includes(query));
+  }).sort((a, b) => a.emp.name.localeCompare(b.emp.name));
 
-  $('tableCount').textContent = `Showing ${visible.length} of ${employees.length}`;
-  if (!visible.length) { $('rows').innerHTML = `<tr><td colspan="6" class="empty">No employees match the current filter.</td></tr>`; return; }
+  $('tableCount').textContent = `Showing ${visible.length} of ${employees.length} staff`;
 
-  const label = { in:'In office', out:'Checked out', absent:'Absent' };
-  $('rows').innerHTML = visible.map((r, i) => {
-    const pct = Math.min(100, Math.round(r.worked / (CFG.targetHours * 3600000) * 100));
-    const punches = r.mine.length
-      ? r.mine.map(p => `<span class="pch ${p.type}">${p.type} ${fmtTime(p.time)}</span>`).join('')
-      : '<span class="muted">No punches</span>';
-    return `<tr class="clickable" data-i="${i}">
-      <td><div class="person"><div class="avatar">${esc(initials(r.emp.name))}</div>
-        <div><div class="name">${esc(r.emp.name)}</div><div class="code">${esc(r.emp.code)}</div></div></div></td>
-      <td><span class="pill ${r.status}">${label[r.status]}</span></td>
-      <td>${r.firstIn ? fmtTime(r.firstIn.time) : '<span class="muted">—</span>'}${r.late ? '<span class="late">LATE</span>' : ''}</td>
-      <td>${r.lastOut ? fmtTime(r.lastOut.time) : '<span class="muted">—</span>'}</td>
-      <td><div>${r.mine.length ? fmtDur(r.worked) : '—'}</div><div class="progress"><span style="width:${pct}%"></span></div></td>
-      <td><div class="punches">${punches}</div></td>
-    </tr>`;
+  if (!visible.length) {
+    $('rowsBody').innerHTML = `<tr><td colspan="8" class="empty-row">No records found matching your filters.</td></tr>`;
+    return;
+  }
+
+  $('rowsBody').innerHTML = visible.map((r, idx) => {
+    // Arrival badge
+    let arrHtml = '<span class="empty-cell">—</span>';
+    if (r.firstIn) {
+      if (r.arrival === 'ON_TIME') {
+        arrHtml = `<span class="arrival-badge ontime">✓ On Time</span>`;
+      } else if (r.arrival === 'LATE') {
+        arrHtml = `<span class="arrival-badge late">⚠ ${esc(r.arrivalNote)}</span>`;
+      } else if (r.arrival === 'ABSENT') {
+        arrHtml = `<span class="arrival-badge absent">✕ Marked Absent</span>`;
+      }
+    }
+
+    // Status pill
+    let statHtml = '';
+    if (r.isCompleted) {
+      statHtml = `<span class="pill out">Day Done (2/2)</span>`;
+    } else if (r.status === 'in') {
+      statHtml = `<span class="pill in">In Office (1/2)</span>`;
+    } else {
+      statHtml = `<span class="pill absent">Absent</span>`;
+    }
+
+    // Stepper
+    let stepHtml = '';
+    if (r.mine.length === 0) {
+      stepHtml = `<span class="punch-step none">1. Check In</span> <span class="punch-step none">2. Check Out</span>`;
+    } else if (r.mine.length === 1) {
+      stepHtml = `<span class="punch-step in">✓ 1. IN ${fmtTime(r.mine[0].time)}</span> <span class="punch-step none">2. Check Out</span>`;
+    } else {
+      stepHtml = `<span class="punch-step in">✓ 1. IN ${fmtTime(r.mine[0].time)}</span> <span class="punch-step out">✓ 2. OUT ${fmtTime(r.mine[1].time)}</span>`;
+    }
+
+    return `
+      <tr class="clickable" onclick="openDetailsModal(${idx})">
+        <td>
+          <div class="person">
+            <div class="avatar">${esc(initials(r.emp.name))}</div>
+            <div>
+              <div class="p-name">${esc(r.emp.name)}</div>
+              <div class="p-code">${esc(r.emp.code || 'EMP')}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="policy-tag">${esc(r.policy.sStart)} - ${esc(r.policy.sEnd)}</span>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">+${r.policy.lateGrace}m late | ${r.policy.absentGrace}h abs</div>
+        </td>
+        <td>${statHtml}</td>
+        <td>${arrHtml}</td>
+        <td>${r.firstIn ? `<strong style="color:#fff">${fmtTime(r.firstIn.time)}</strong>` : '<span class="empty-cell">—</span>'}</td>
+        <td>${r.lastOut ? `<strong style="color:#fff">${fmtTime(r.lastOut.time)}</strong>` : '<span class="empty-cell">—</span>'}</td>
+        <td><div class="hours-meter">${r.mine.length ? fmtDur(r.worked) : '<span class="empty-cell">—</span>'}</div></td>
+        <td><div class="punch-stepper">${stepHtml}</div></td>
+      </tr>
+    `;
   }).join('');
-
-  document.querySelectorAll('tr.clickable').forEach(tr =>
-    tr.addEventListener('click', () => openModal(visible[+tr.dataset.i])));
 }
 
-function renderWeek() {
-  const base = new Date($('date').value + 'T00:00:00');
-  const days = [...Array(7)].map((_, i) => { const d = new Date(base); d.setDate(base.getDate() - (6 - i)); return d.toLocaleDateString('en-CA'); });
-  Promise.all(days.map(fetchDay)).then(all => {
+function openDetailsModal(index) {
+  const r = rowsData[index];
+  if (!r) return;
+
+  $('mName').textContent = r.emp.name;
+  $('mMeta').textContent = `Code: ${r.emp.code || 'N/A'} · Shift: ${r.policy.sStart} - ${r.policy.sEnd} · Worked: ${fmtDur(r.worked)}`;
+
+  if (!r.mine.length) {
+    $('mTimeline').innerHTML = `<div class="timeline-item" style="color:var(--muted);justify-content:center">No punches recorded for this employee today.</div>`;
+  } else {
+    $('mTimeline').innerHTML = r.mine.map((p, pIdx) => `
+      <div class="timeline-item">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="punch-step ${p.type === 'IN' ? 'in' : 'out'}">${pIdx + 1}. ${p.type}</span>
+          <span style="font-size:13px;font-weight:600;color:#fff">${p.type === 'IN' ? 'Office Check In' : 'Office Check Out'}</span>
+        </div>
+        <div style="text-align:right">
+          <strong style="color:#fff">${fmtTime(p.time)}</strong>
+          ${p.arrivalStatus ? `<div style="font-size:10px;color:var(--muted)">${p.arrivalStatus}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  $('overlay').classList.add('show');
+}
+
+function closeModal() {
+  $('overlay').classList.remove('show');
+}
+
+$('overlay').addEventListener('click', e => {
+  if (e.target.id === 'overlay') closeModal();
+});
+
+function renderWeeklyTrends() {
+  const base = new Date($('dateInput').value + 'T00:00:00');
+  const days = [...Array(7)].map((_, i) => {
+    const d = new Date(base);
+    d.setDate(base.getDate() - (6 - i));
+    return d.toISOString().slice(0, 10);
+  });
+
+  Promise.all(days.map(fetchDayRecords)).then(all => {
     const counts = all.map(recs => new Set(recs.filter(r => r.type === 'IN').map(r => r.employeeId)).size);
     const max = Math.max(1, ...counts);
-    $('weekBars').innerHTML = days.map((d, i) => {
-      const lbl = new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
-      return `<div class="bar-col ${i === 6 ? 'today' : ''}">
-        <div class="bar-val">${counts[i]}</div>
-        <div class="bar" style="height:${Math.round(counts[i] / max * 100)}%"></div>
-        <div class="bar-lbl">${lbl}</div></div>`;
+
+    $('weekBars').innerHTML = days.map((dayStr, idx) => {
+      const lbl = new Date(dayStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+      const isTodayBar = dayStr === todayStr();
+      const heightPct = Math.round((counts[idx] / max) * 100);
+
+      return `
+        <div class="bar-col ${isTodayBar ? 'today' : ''}">
+          <div class="bar-val">${counts[idx]}</div>
+          <div class="bar-fill" style="height:${Math.max(6, heightPct)}%"></div>
+          <div class="bar-lbl">${lbl}</div>
+        </div>
+      `;
     }).join('');
   });
 }
 
-function renderLog() {
-  const list = [...records].sort((a, b) => b.time - a.time);
-  $('logCount').textContent = `${list.length} events`;
-  $('logRows').innerHTML = list.length ? list.map(r => `<tr>
-      <td>${fmtTime(r.time)}</td><td>${esc(r.name)}</td><td>${esc(r.code)}</td>
-      <td><span class="pill ${r.type === 'IN' ? 'in' : 'out'}">${r.type === 'IN' ? 'Check In' : 'Check Out'}</span></td></tr>`).join('')
-    : `<tr><td colspan="4" class="empty">No punches recorded for this date.</td></tr>`;
-}
+function renderAuditLog() {
+  const sorted = [...records].sort((a, b) => b.time - a.time);
+  $('logCount').textContent = `${sorted.length} punch events`;
 
-function openModal(r) {
-  $('mName').textContent = r.emp.name;
-  $('mMeta').textContent = `${r.emp.code} · ${fmtDur(r.worked)} worked`;
-  $('mList').innerHTML = r.mine.length
-    ? r.mine.map(p => `<div class="row"><span>${p.type === 'IN' ? 'Check In' : 'Check Out'}</span><strong>${fmtTime(p.time)}</strong></div>`).join('')
-    : '<div class="muted">No punches on this date.</div>';
-  $('overlay').classList.add('show');
+  if (!sorted.length) {
+    $('logRowsBody').innerHTML = `<tr><td colspan="6" class="empty-row">No punch events logged for this date.</td></tr>`;
+    return;
+  }
+
+  $('logRowsBody').innerHTML = sorted.map(p => `
+    <tr>
+      <td><strong style="color:#fff">${fmtTime(p.time)}</strong></td>
+      <td><strong style="color:#fff">${esc(p.name)}</strong></td>
+      <td><span class="p-code">${esc(p.code)}</span></td>
+      <td><span class="punch-step ${p.type === 'IN' ? 'in' : 'out'}">${p.type === 'IN' ? 'Check In (1/2)' : 'Check Out (2/2)'}</span></td>
+      <td>
+        ${p.arrivalStatus === 'ON_TIME' ? '<span class="arrival-badge ontime">On Time</span>' :
+          p.arrivalStatus === 'LATE' ? '<span class="arrival-badge late">Late</span>' :
+          p.arrivalStatus === 'ABSENT' ? '<span class="arrival-badge absent">Absent</span>' :
+          '<span class="empty-cell">—</span>'}
+      </td>
+      <td><span style="font-size:12px;color:var(--muted)">${esc(p.statusNote || 'Standard punch')}</span></td>
+    </tr>
+  `).join('');
 }
 
 function exportCSV() {
-  const header = ['Code','Name','Status','First In','Last Out','Hours Worked','Late','Punches'];
-  const lines = rowsData.map(r => [
-    r.emp.code, r.emp.name, r.status,
-    r.firstIn ? fmtTime(r.firstIn.time) : '', r.lastOut ? fmtTime(r.lastOut.time) : '',
-    fmtDur(r.worked), r.late ? 'Yes' : 'No',
-    r.mine.map(p => `${p.type} ${fmtTime(p.time)}`).join(' | '),
-  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
-  const blob = new Blob([[header.join(','), ...lines].join('\n')], { type: 'text/csv' });
+  const headers = [
+    'Employee Code',
+    'Employee Name',
+    'Shift Start',
+    'Shift End',
+    'Status',
+    'Arrival Status',
+    'Arrival Note',
+    'First Check In',
+    'Last Check Out',
+    'Hours Worked',
+    'Punches Count',
+    'Punches Detail'
+  ];
+
+  const rows = rowsData.map(r => [
+    r.emp.code || '',
+    r.emp.name || '',
+    r.policy.sStart,
+    r.policy.sEnd,
+    r.isCompleted ? 'DAY_COMPLETED' : r.status.toUpperCase(),
+    r.arrival,
+    r.arrivalNote,
+    r.firstIn ? fmtTime(r.firstIn.time) : '',
+    r.lastOut ? fmtTime(r.lastOut.time) : '',
+    fmtDur(r.worked),
+    r.mine.length,
+    r.mine.map(p => `${p.type} ${fmtTime(p.time)}`).join(' | ')
+  ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
+
+  const csvContent = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `attendance-${$('date').value}.csv`;
+  a.href = url;
+  a.download = `attendance-report-${$('dateInput').value}.csv`;
   a.click();
+  URL.revokeObjectURL(url);
 }
 
-document.querySelectorAll('.nav a[data-view]').forEach(a => a.addEventListener('click', () => {
-  document.querySelectorAll('.nav a').forEach(x => x.classList.remove('active'));
-  a.classList.add('active');
-  const v = a.dataset.view;
-  $('view-dashboard').style.display = v === 'dashboard' ? '' : 'none';
-  $('view-log').style.display = v === 'log' ? '' : 'none';
-  $('pageTitle').textContent = v === 'dashboard' ? 'Dashboard' : 'Punch Log';
-}));
-
-$('date').addEventListener('change', load);
-$('search').addEventListener('input', render);
-$('filter').addEventListener('change', render);
+// Event Listeners
+$('dateInput').addEventListener('change', loadData);
+$('searchInput').addEventListener('input', renderAll);
+$('filterSelect').addEventListener('change', renderAll);
 $('exportBtn').addEventListener('click', exportCSV);
-$('mClose').addEventListener('click', () => $('overlay').classList.remove('show'));
-$('overlay').addEventListener('click', e => { if (e.target.id === 'overlay') $('overlay').classList.remove('show'); });
 
-fetch('/api/config').then(r => r.json()).then(c => { CFG = c; load(); });
-setInterval(() => { if (isToday()) load(); }, 30000);
+// Initial Load and Auto Refresh every 30 seconds
+loadData();
+setInterval(() => {
+  if ($('dateInput').value === todayStr()) {
+    loadData();
+  }
+}, 30000);
 </script>
 </body>
 </html>
